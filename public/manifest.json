@@ -1,0 +1,12 @@
+{
+  "name": "LEXORA — واژگان شخصی تو",
+  "short_name": "LEXORA",
+  "description": "سیستم شخصی یادگیری و مرور واژگان انگلیسی",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090a0f",
+  "theme_color": "#090a0f",
+  "icons": []
+}
