@@ -232,7 +232,7 @@ export default function Home() {
       const hasAnyData = !!(definition || example || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
       if (!hasAnyData) throw new Error("دیکشنری پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.");
       const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "");
-      const finalExample = example || (finalDefinition ? "I came across the word \"" + term + "\" while learning English." : "");
+      const finalExample = example || (finalDefinition ? "I learned the word " + term + " while studying English." : "");
       const finalExampleFa = exampleFa || (finalExample ? await translateToPersian(finalExample) : "");
       setForm(current => ({
         ...current, word: term, meaning: translatedMeaning || current.meaning || definition,
