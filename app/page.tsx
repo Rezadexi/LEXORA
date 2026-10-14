@@ -117,14 +117,29 @@ export default function Home() {
     window.speechSynthesis.speak(utterance);
   }
 
+  async function fetchJson<T>(url: string, timeoutMs = 7000): Promise<T> {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error(`درخواست ناموفق بود (${response.status})`);
+      return await response.json() as T;
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
   async function translateToPersian(text: string): Promise<string> {
     if (!text.trim()) return "";
     try {
-      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fa`);
-      if (!response.ok) return "";
-      const data = await response.json();
+      const data = await fetchJson<{ responseData?: { translatedText?: string }; responseStatus?: number }>(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en%7Cfa`,
+        4500
+      );
       const translated = String(data?.responseData?.translatedText ?? "").trim();
-      return translated && !translated.toLowerCase().includes("please use") ? translated : "";
+      if (data.responseStatus && data.responseStatus !== 200) return "";
+      if (!translated || translated.toLowerCase().includes("please use") || translated.toLowerCase() === text.toLowerCase()) return "";
+      return translated;
     } catch { return ""; }
   }
 
@@ -150,37 +165,97 @@ export default function Home() {
   async function enrichWord() {
     const term = form.word.trim();
     if (!term) { setEnrichMessage("اول کلمه انگلیسی را وارد کن."); return; }
-    setEnriching(true); setEnrichMessage("در حال پیدا کردن اطلاعات واژه…");
+    if (!/^[a-zA-Z][a-zA-Z' -]{0,59}$/.test(term)) {
+      setEnrichMessage("لطفاً یک واژه یا عبارت انگلیسی وارد کن.");
+      return;
+    }
+
+    setEnriching(true);
+    setEnrichMessage("در حال دریافت اطلاعات…");
     try {
-      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`);
-      if (!response.ok) throw new Error("واژه در دیکشنری پیدا نشد.");
-      const data = await response.json();
-      const entry = Array.isArray(data) ? data[0] : null;
-      const meanings = Array.isArray(entry?.meanings) ? entry.meanings : [];
-      const definition = meanings.flatMap((m: DictionaryMeaning) => (m.definitions ?? []).map((d: DictionaryDefinition) => d.definition)).find(Boolean) ?? "";
-      const example = meanings.flatMap((m: DictionaryMeaning) => (m.definitions ?? []).map((d: DictionaryDefinition) => d.example)).find(Boolean) ?? "";
-      const relatedSynonyms: string[] = Array.from(new Set<string>(meanings.flatMap((m: DictionaryMeaning): string[] => [...(m.synonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition): string[] => d.synonyms ?? [])]))).filter(v => v.toLowerCase() !== term.toLowerCase()).slice(0, 4);
-      const relatedAntonyms: string[] = Array.from(new Set<string>(meanings.flatMap((m: DictionaryMeaning): string[] => [...(m.antonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition): string[] => d.antonyms ?? [])]))).slice(0, 4);
-      const [meaningFa, exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
-        translateToPersian(term),
+      type DictionaryResponse = Array<{ meanings?: DictionaryMeaning[] }>;
+      type RelatedWord = { word: string };
+      const dictionaryPromise = fetchJson<DictionaryResponse>(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term.toLowerCase())}`,
+        7000
+      );
+      const meaningPromise = translateToPersian(term);
+      const [dictionaryResult, meaningFa] = await Promise.allSettled([dictionaryPromise, meaningPromise]);
+
+      let definition = "";
+      let example = "";
+      let relatedSynonyms: string[] = [];
+      let relatedAntonyms: string[] = [];
+      if (dictionaryResult.status === "fulfilled") {
+        const meanings = dictionaryResult.value[0]?.meanings ?? [];
+        definition = meanings.flatMap(m => (m.definitions ?? []).map(d => d.definition ?? "")).find(Boolean) ?? "";
+        example = meanings.flatMap(m => (m.definitions ?? []).map(d => d.example ?? "")).find(Boolean) ?? "";
+        relatedSynonyms = [...new Set(meanings.flatMap(m => [
+          ...(m.synonyms ?? []),
+          ...(m.definitions ?? []).flatMap(d => d.synonyms ?? [])
+        ]))].filter(v => v.toLowerCase() !== term.toLowerCase()).slice(0, 4);
+        relatedAntonyms = [...new Set(meanings.flatMap(m => [
+          ...(m.antonyms ?? []),
+          ...(m.definitions ?? []).flatMap(d => d.antonyms ?? [])
+        ]))].slice(0, 4);
+      }
+
+      // Datamuse provides a separate, keyless synonym/antonym source when the dictionary omits them.
+      if (!relatedSynonyms.length || !relatedAntonyms.length) {
+        const [synResult, antResult] = await Promise.allSettled([
+          !relatedSynonyms.length
+            ? fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(term)}&max=4`, 4500)
+            : Promise.resolve([] as RelatedWord[]),
+          !relatedAntonyms.length
+            ? fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_ant=${encodeURIComponent(term)}&max=4`, 4500)
+            : Promise.resolve([] as RelatedWord[])
+        ]);
+        if (synResult.status === "fulfilled" && !relatedSynonyms.length) {
+          relatedSynonyms = synResult.value.map(item => item.word).filter(Boolean).slice(0, 4);
+        }
+        if (antResult.status === "fulfilled" && !relatedAntonyms.length) {
+          relatedAntonyms = antResult.value.map(item => item.word).filter(Boolean).slice(0, 4);
+        }
+      }
+
+      const [exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
         translateToPersian(example),
-        Promise.all(relatedSynonyms.map(async (w) => `${w} — ${await translateToPersian(w) || "معنی نامشخص"}`)),
-        Promise.all(relatedAntonyms.map(async (w) => `${w} — ${await translateToPersian(w) || "معنی نامشخص"}`))
+        Promise.all(relatedSynonyms.slice(0, 3).map(async w => {
+          const translation = await translateToPersian(w);
+          return translation ? `${w} — ${translation}` : w;
+        })),
+        Promise.all(relatedAntonyms.slice(0, 3).map(async w => {
+          const translation = await translateToPersian(w);
+          return translation ? `${w} — ${translation}` : w;
+        }))
       ]);
-      setForm(current => ({ ...current,
-        meaning: meaningFa || current.meaning,
+
+      const translatedMeaning = meaningFa.status === "fulfilled" ? meaningFa.value : "";
+      const hasAnyData = !!(definition || example || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
+      if (!hasAnyData) throw new Error("سرویس‌های واژه‌یابی در دسترس نیستند. چند لحظه بعد دوباره امتحان کن.");
+
+      setForm(current => ({
+        ...current,
+        meaning: translatedMeaning || current.meaning || definition,
         definition: definition || current.definition,
         example: example || current.example,
         exampleFa: exampleFa || current.exampleFa,
-        synonyms: synonymTranslations.join("، ") || current.synonyms,
-        antonyms: antonymTranslations.join("، ") || current.antonyms,
-        level: estimateLevel(term, definition),
+        synonyms: synonymTranslations.join("، ") || relatedSynonyms.join("، ") || current.synonyms,
+        antonyms: antonymTranslations.join("، ") || relatedAntonyms.join("، ") || current.antonyms,
+        level: definition ? estimateLevel(term, definition) : current.level,
         category: inferCategory(term, definition)
       }));
-      setEnrichMessage("اطلاعات پیدا شد. ترجمه‌ها و سطح زبان تخمینی‌اند؛ قبل از ذخیره بررسی‌شان کن.");
+
+      if (!translatedMeaning && !form.meaning.trim()) {
+        setEnrichMessage("اطلاعات انگلیسی تکمیل شد؛ سرویس ترجمه پاسخ نداد، پس تعریف انگلیسی در فیلد معنی قرار گرفت. می‌توانی آن را به فارسی اصلاح کنی.");
+      } else {
+        setEnrichMessage("تکمیل انجام شد. اطلاعات را بررسی کن؛ اگر سرویسی پاسخ ندهد، فیلدهای موجود حفظ می‌شوند.");
+      }
     } catch (error) {
-      setEnrichMessage(error instanceof Error ? `${error.message}؛ می‌توانی اطلاعات را دستی وارد کنی.` : "دریافت اطلاعات ناموفق بود؛ اطلاعات را دستی وارد کن.");
-    } finally { setEnriching(false); }
+      setEnrichMessage(error instanceof Error ? `${error.message}؛ اطلاعات قبلی پاک نشد.` : "تکمیل خودکار ناموفق بود؛ دوباره امتحان کن.");
+    } finally {
+      setEnriching(false);
+    }
   }
 
   function openAdd() {
