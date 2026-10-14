@@ -215,7 +215,7 @@ export default function Home() {
       const rateB = b.reviews ? b.correct / b.reviews : 0;
       return rateA - rateB || a.reviews - b.reviews;
     });
-    setQuizOrder(priority); setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setModal("quiz");
+    setQuizTotal(Math.min(10, priority.length)); setQuizOrder(priority); setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setRetriedIds(new Set()); setModal("quiz");
   }
 
   const quizWord = quizOrder.length ? quizOrder[quizIndex % quizOrder.length] : null;
@@ -236,7 +236,7 @@ export default function Home() {
   }
 
   function nextQuestion() {
-    if (quizIndex + 1 >= Math.min(10, quizOrder.length)) setQuizDone(true);
+    if (quizIndex + 1 >= quizTotal) setQuizDone(true);
     else { setQuizIndex(i => i + 1); setQuizChoice(null); }
   }
 
@@ -417,13 +417,13 @@ export default function Home() {
               <div style={{ textAlign: "center", padding: "25px 0" }}>
                 <div className="stat-icon mint" style={{ margin: "0 auto 15px", width: 58, height: 58 }}><GraduationCap size={27}/></div>
                 <h2>آفرین، تمرین تمام شد!</h2>
-                <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {Math.min(10, quizOrder.length)}</span></div>
+                <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {quizTotal}</span></div>
                 <p className="muted">پاسخ درست در این دور. تکرار منظم به تثبیت حافظه کمک می‌کند.</p>
                 <button className="btn btn-primary" onClick={startQuiz}><RotateCcw size={16}/> دوباره تمرین کن</button>
               </div>
             ) : quizWord ? (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}><span className="muted">سؤال {quizIndex + 1} از {Math.min(10, words.length)}</span><span className="level">امتیاز: {quizScore}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}><span className="muted">سؤال {quizIndex + 1} از {quizTotal}</span><span className="level">امتیاز: {quizScore}</span></div>
                 <div className="quiz-question"><span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}><span>{quizWord.word}</span><button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button></span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>معنی درست این واژه کدام است؟</span></div>
                 <div className="quiz-options">
                   {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{option.meaning}</button>)}
