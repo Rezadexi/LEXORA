@@ -552,11 +552,19 @@ export default function Home() {
               <div style={{ padding: "16px 0" }}>
                 <h3>نوع آزمون را انتخاب کن</h3>
                 <p className="muted">هر دور حداکثر ۱۰ سؤال دارد؛ واژه‌های دشوارتر اولویت می‌گیرند.</p>
-                <div className="quiz-options" style={{ marginTop: 16 }}>
-                  <button className="quiz-option" onClick={() => startQuiz("smart")}>آزمون هوشمند <small>واژه‌های یادنگرفته و دشوار</small></button>
-                  <button className="quiz-option" onClick={() => startQuiz("specialist")}>آزمون تخصصی <small>واژه‌های جدید و اشتباه‌شده</small></button>
-                  <button className="quiz-option" onClick={() => startQuiz("general")}>آزمون کلی <small>۱۰ واژه از کل بانک</small></button>
-                  <button className="quiz-option" disabled={wrongIds.length < 2} onClick={() => startQuiz("wrong")}>آزمون واژه‌های غلط ({wrongIds.length})</button>
+                <div className="quiz-mode-section" style={{ marginTop: 18 }}>
+                  <h4 style={{ margin: "0 0 8px", color: "#b8a5ff" }}>تمرین عمومی</h4>
+                  <div className="quiz-options">
+                    <button className="quiz-option" onClick={() => startQuiz("general")}>آزمون کلی <small>سؤال از همه واژه‌های بانک، حتی واژه‌های مسلط‌شده</small></button>
+                    <button className="quiz-option" onClick={() => startQuiz("smart")}>آزمون هوشمند <small>تمرکز روی واژه‌های یادنگرفته و دشوار</small></button>
+                  </div>
+                </div>
+                <div className="quiz-mode-section" style={{ marginTop: 18 }}>
+                  <h4 style={{ margin: "0 0 8px", color: "#6ee7c2" }}>تمرین تخصصی</h4>
+                  <div className="quiz-options">
+                    <button className="quiz-option" onClick={() => startQuiz("specialist")}>آزمون تخصصی <small>فقط واژه‌های جدید یا واژه‌هایی که قبلاً اشتباه زده‌ای</small></button>
+                    <button className="quiz-option" disabled={wrongIds.length < 2} onClick={() => startQuiz("wrong")}>مرور واژه‌های غلط ({wrongIds.length}) <small>فقط غلط‌های ثبت‌شده در این نشست</small></button>
+                  </div>
                 </div>
               </div>
             ) : quizDone ? (
