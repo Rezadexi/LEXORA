@@ -233,6 +233,14 @@ export default function Home() {
     setWords(current => current.map(w => w.id === quizWord.id ? {
       ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0)
     } : w));
+    if (!correct && !retriedIds.has(quizWord.id)) {
+      setQuizOrder(current => {
+        const updated = [...current];
+        updated.splice(Math.min(quizIndex + 2, updated.length), 0, quizWord);
+        return updated;
+      });
+      setRetriedIds(current => new Set(current).add(quizWord.id));
+    }
   }
 
   function nextQuestion() {
