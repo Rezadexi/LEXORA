@@ -23,6 +23,7 @@ type Word = {
   createdAt: number;
   correct: number;
   reviews: number;
+  lastReviewedAt?: number;
 };
 
 type RelatedItem = { word: string; meaning: string; value: string };
@@ -114,7 +115,8 @@ export default function Home() {
   }), [words, query, filter]);
 
   const mastered = words.filter(w => w.reviews >= 5 && w.correct >= 4).length;
-  const reviewedToday = words.reduce((sum, w) => sum + (w.reviews > 0 ? 1 : 0), 0);
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const reviewedToday = words.filter(w => typeof w.lastReviewedAt === "number" && w.lastReviewedAt >= todayStart.getTime()).length;
   const progress = Math.min(100, Math.round((reviewedToday / 10) * 100));
 
   function speak(text: string) {
@@ -258,6 +260,10 @@ export default function Home() {
   function saveWord(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.word.trim() || !form.meaning.trim()) return;
+    if (words.some(w => w.word.trim().toLowerCase() === form.word.trim().toLowerCase())) {
+      alert("این واژه از قبل در بانک وجود دارد. برای جلوگیری از تکرار، ذخیره نشد.");
+      return;
+    }
     const newWord: Word = {
       ...form, word: form.word.trim(), meaning: form.meaning.trim(),
       id: crypto.randomUUID(), createdAt: Date.now(), correct: 0, reviews: 0
@@ -312,7 +318,7 @@ export default function Home() {
     const correct = wordId === quizWord.id;
     if (correct) setQuizScore(s => s + 1);
     setWords(current => current.map(w => w.id === quizWord.id ? {
-      ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0)
+      ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0), lastReviewedAt: Date.now()
     } : w));
     if (!correct && !retriedIds.has(quizWord.id)) {
       setQuizOrder(current => {
@@ -320,6 +326,7 @@ export default function Home() {
         updated.splice(Math.min(quizIndex + 2, updated.length), 0, quizWord);
         return updated;
       });
+      setQuizTotal(total => total + 1);
       setRetriedIds(current => new Set(current).add(quizWord.id));
     }
   }
@@ -334,7 +341,34 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "lexora-vocabulary-backup.json"; a.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function importWords(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!Array.isArray(parsed)) throw new Error("format");
+      const imported: Word[] = parsed.filter((item): item is Word => !!item && typeof item === "object" && typeof (item as Word).word === "string" && typeof (item as Word).meaning === "string")
+        .map(item => ({
+          id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
+          word: item.word.trim(), meaning: item.meaning, category: item.category || "Other", level: item.level || "نامشخص",
+          definition: item.definition || "", example: item.example || "", exampleFa: item.exampleFa || "",
+          synonyms: item.synonyms || "", antonyms: item.antonyms || "", createdAt: Number(item.createdAt) || Date.now(),
+          correct: Math.max(0, Number(item.correct) || 0), reviews: Math.max(0, Number(item.reviews) || 0),
+          lastReviewedAt: Number(item.lastReviewedAt) || undefined
+        })).filter(item => item.word && item.meaning);
+      if (!imported.length) throw new Error("empty");
+      const existing = new Set(words.map(w => w.word.trim().toLowerCase()));
+      const unique = imported.filter(w => !existing.has(w.word.trim().toLowerCase()));
+      if (!unique.length) { alert("همهٔ واژه‌های فایل از قبل در بانک هستند؛ چیزی تغییر نکرد."); return; }
+      if (!confirm(`${unique.length} واژهٔ جدید به بانک اضافه شود؟ واژه‌های فعلی حذف نمی‌شوند.`)) return;
+      setWords(current => [...unique, ...current]);
+      alert(`${unique.length} واژه با موفقیت وارد شد.`);
+    } catch {
+      alert("فایل معتبر نیست. فایل پشتیبان JSON خروجی LEXORA را انتخاب کن.");
+    } finally { e.target.value = ""; }
   }
 
   const input = (key: keyof typeof form, placeholder: string, required = false) => (
@@ -354,6 +388,8 @@ export default function Home() {
         </div>
         <div className="top-actions">
           <button className="btn btn-small" onClick={exportWords}><ArrowDownLeft size={15}/> خروجی بانک</button>
+          <button className="btn btn-small" onClick={() => document.getElementById("lexora-import-file")?.click()}><BookOpen size={15}/> ورود پشتیبان</button>
+          <input id="lexora-import-file" type="file" accept="application/json,.json" onChange={importWords} style={{ display: "none" }} />
           <button className="btn btn-primary btn-small" onClick={openAdd}><Plus size={16}/> لغت جدید</button>
         </div>
       </header>
@@ -376,7 +412,7 @@ export default function Home() {
             <div className="goal-number">{Math.min(reviewedToday, 10)} <span>/ 10 واژه</span></div>
             <div className="muted">هر روز کمی بهتر از دیروز</div>
             <div className="progress-track"><div className="progress-fill" style={{ width: `${progress}%` }}/></div>
-            <div className="muted">{progress}% از هدف روزانه ثبت‌شده در این نسخه</div>
+            <div className="muted">{progress}% از هدف روزانه بر اساس تمرین‌های امروز</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#b5b7c6", fontSize: 12 }}>
             <Flame size={17} color="#ffbf7d"/> استمرار از شدت مهم‌تر است.
@@ -395,7 +431,7 @@ export default function Home() {
         </div>
         <div className="panel stat">
           <div className="stat-icon orange"><Zap size={20}/></div>
-          <div><div className="stat-value">{reviewedToday.toString().padStart(2, "0")}</div><div className="stat-label">واژه‌های تمرین‌شده</div></div>
+          <div><div className="stat-value">{reviewedToday.toString().padStart(2, "0")}</div><div className="stat-label">واژه‌های تمرین‌شده امروز</div></div>
         </div>
       </section>
 
