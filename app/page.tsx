@@ -87,7 +87,6 @@ export default function Home() {
   const [quizTotal, setQuizTotal] = useState(0);
   const [quizStarted, setQuizStarted] = useState(false);
   const [wrongIds, setWrongIds] = useState<string[]>([]);
-  const [retriedIds, setRetriedIds] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
   const [checkedRelated, setCheckedRelated] = useState<string[]>([]);
@@ -296,7 +295,7 @@ export default function Home() {
   }
 
   function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong") {
-    if (!mode) { setQuizStarted(false); setQuizDone(false); setWrongIds([]); setModal("quiz"); return; }
+    if (!mode) { setQuizStarted(false); setQuizDone(false); setModal("quiz"); return; }
     const pool = words.filter(w => mode === "general" || (mode === "wrong"
       ? wrongIds.includes(w.id)
       : mode === "specialist" ? ((w.correctStreak ?? 0) < 5 && (w.reviews === 0 || w.correct < w.reviews))
@@ -307,9 +306,11 @@ export default function Home() {
       const rateA = a.reviews ? a.correct / a.reviews : 0, rateB = b.reviews ? b.correct / b.reviews : 0;
       return (mode === "general" ? 0 : streakA - streakB) || rateA - rateB || a.reviews - b.reviews;
     });
-    const size = mode === "wrong" ? priority.length : Math.min(10, priority.length);
+    const size = Math.min(10, priority.length);
+    const selectedIds = new Set(priority.slice(0, size).map(w => w.id));
     setQuizOrder(priority.slice(0, size)); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
-    setQuizScore(0); setQuizDone(false); setQuizStarted(true); setWrongIds([]); setModal("quiz");
+    setQuizScore(0); setQuizDone(false); setQuizStarted(true);
+    setWrongIds(mode === "wrong" ? wrongIds.filter(id => !selectedIds.has(id)) : []); setModal("quiz");
   }
 
   const quizWord = quizOrder.length ? quizOrder[quizIndex % quizOrder.length] : null;
