@@ -68,6 +68,11 @@ export default function Home() {
   const [quizChoice, setQuizChoice] = useState<string | null>(null);
   const [quizScore, setQuizScore] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
+  const [quizOrder, setQuizOrder] = useState<Word[]>([]);
+  const [quizTotal, setQuizTotal] = useState(0);
+  const [retriedIds, setRetriedIds] = useState<Set<string>>(new Set());
+  const [enriching, setEnriching] = useState(false);
+  const [enrichMessage, setEnrichMessage] = useState("");
   const [form, setForm] = useState({
     word: "", meaning: "", category: "Daily English", level: "نامشخص",
     definition: "", example: "", exampleFa: "", synonyms: "", antonyms: ""
@@ -110,6 +115,72 @@ export default function Home() {
     window.speechSynthesis.speak(utterance);
   }
 
+  async function translateToPersian(text: string): Promise<string> {
+    if (!text.trim()) return "";
+    try {
+      const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|fa`);
+      if (!response.ok) return "";
+      const data = await response.json();
+      const translated = String(data?.responseData?.translatedText ?? "").trim();
+      return translated && !translated.toLowerCase().includes("please use") ? translated : "";
+    } catch { return ""; }
+  }
+
+  function estimateLevel(word: string, definition: string): string {
+    const w = word.toLowerCase();
+    const beginner = new Set(["able","about","above","after","again","all","also","always","answer","ask","back","beautiful","because","begin","big","book","bring","call","change","child","city","come","day","different","easy","eat","enough","every","family","feel","find","first","food","friend","good","great","happy","help","home","house","important","know","learn","life","like","little","long","look","make","many","more","most","need","new","nice","often","people","place","play","problem","read","right","same","school","small","start","study","take","thing","think","time","today","try","use","want","water","work","world","write"]);
+    if (beginner.has(w)) return "A1";
+    if (w.length <= 4 && definition.length < 90) return "A2";
+    if (w.length <= 6 && definition.length < 130) return "B1";
+    if (w.length <= 9 && definition.length < 180) return "B2";
+    return "C1";
+  }
+
+  function inferCategory(word: string, definition: string): string {
+    const text = `${word} ${definition}`.toLowerCase();
+    if (/travel|journey|flight|hotel|tourist|destination|airport|journey/.test(text)) return "Travel";
+    if (/study|school|learn|academic|research|student|education|theory|essay/.test(text)) return "Academic";
+    if (/work|business|job|company|career|office|professional|meeting/.test(text)) return "Work & study";
+    if (/emotion|personality|character|resilien|confidence|habit|motivat|patient/.test(text)) return "Personal growth";
+    return "Daily English";
+  }
+
+  async function enrichWord() {
+    const term = form.word.trim();
+    if (!term) { setEnrichMessage("اول کلمه انگلیسی را وارد کن."); return; }
+    setEnriching(true); setEnrichMessage("در حال پیدا کردن اطلاعات واژه…");
+    try {
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`);
+      if (!response.ok) throw new Error("واژه در دیکشنری پیدا نشد.");
+      const data = await response.json();
+      const entry = Array.isArray(data) ? data[0] : null;
+      const meanings = Array.isArray(entry?.meanings) ? entry.meanings : [];
+      const definition = meanings.flatMap((m: any) => (m.definitions ?? []).map((d: any) => d.definition)).find(Boolean) ?? "";
+      const example = meanings.flatMap((m: any) => (m.definitions ?? []).map((d: any) => d.example)).find(Boolean) ?? "";
+      const relatedSynonyms = [...new Set(meanings.flatMap((m: any) => [...(m.synonyms ?? []), ...(m.definitions ?? []).flatMap((d: any) => d.synonyms ?? [])]))].filter((v: string) => v.toLowerCase() !== term.toLowerCase()).slice(0, 4) as string[];
+      const relatedAntonyms = [...new Set(meanings.flatMap((m: any) => [...(m.antonyms ?? []), ...(m.definitions ?? []).flatMap((d: any) => d.antonyms ?? [])]))].slice(0, 4) as string[];
+      const [meaningFa, exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
+        translateToPersian(term),
+        translateToPersian(example),
+        Promise.all(relatedSynonyms.map(async (w) => `${w} — ${await translateToPersian(w) || "معنی نامشخص"}`)),
+        Promise.all(relatedAntonyms.map(async (w) => `${w} — ${await translateToPersian(w) || "معنی نامشخص"}`))
+      ]);
+      setForm(current => ({ ...current,
+        meaning: meaningFa || current.meaning,
+        definition: definition || current.definition,
+        example: example || current.example,
+        exampleFa: exampleFa || current.exampleFa,
+        synonyms: synonymTranslations.join("، ") || current.synonyms,
+        antonyms: antonymTranslations.join("، ") || current.antonyms,
+        level: estimateLevel(term, definition),
+        category: inferCategory(term, definition)
+      }));
+      setEnrichMessage("اطلاعات پیدا شد. ترجمه‌ها و سطح زبان تخمینی‌اند؛ قبل از ذخیره بررسی‌شان کن.");
+    } catch (error) {
+      setEnrichMessage(error instanceof Error ? `${error.message}؛ می‌توانی اطلاعات را دستی وارد کنی.` : "دریافت اطلاعات ناموفق بود؛ اطلاعات را دستی وارد کن.");
+    } finally { setEnriching(false); }
+  }
+
   function openAdd() {
     setForm({ word: "", meaning: "", category: "Daily English", level: "نامشخص", definition: "", example: "", exampleFa: "", synonyms: "", antonyms: "" });
     setModal("add");
@@ -139,10 +210,15 @@ export default function Home() {
       alert("برای شروع آزمون، حداقل دو لغت در بانک لازم است.");
       return;
     }
-    setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setModal("quiz");
+    const priority = [...words].sort((a, b) => {
+      const rateA = a.reviews ? a.correct / a.reviews : 0;
+      const rateB = b.reviews ? b.correct / b.reviews : 0;
+      return rateA - rateB || a.reviews - b.reviews;
+    });
+    setQuizTotal(Math.min(10, priority.length)); setQuizOrder(priority); setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setRetriedIds(new Set()); setModal("quiz");
   }
 
-  const quizWord = words.length ? words[quizIndex % words.length] : null;
+  const quizWord = quizOrder.length ? quizOrder[quizIndex % quizOrder.length] : null;
   const quizOptions = useMemo(() => {
     if (!quizWord) return [];
     const others = words.filter(w => w.id !== quizWord.id).sort((a, b) => a.word.localeCompare(b.word)).slice(0, 3);
@@ -157,10 +233,18 @@ export default function Home() {
     setWords(current => current.map(w => w.id === quizWord.id ? {
       ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0)
     } : w));
+    if (!correct && !retriedIds.has(quizWord.id)) {
+      setQuizOrder(current => {
+        const updated = [...current];
+        updated.splice(Math.min(quizIndex + 2, updated.length), 0, quizWord);
+        return updated;
+      });
+      setRetriedIds(current => new Set(current).add(quizWord.id));
+    }
   }
 
   function nextQuestion() {
-    if (quizIndex + 1 >= Math.min(10, words.length)) setQuizDone(true);
+    if (quizIndex + 1 >= quizTotal) setQuizDone(true);
     else { setQuizIndex(i => i + 1); setQuizChoice(null); }
   }
 
@@ -293,7 +377,7 @@ export default function Home() {
         <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal(null); }}>
           <div className="modal">
             <div className="modal-head"><h2>افزودن واژه به بانک</h2><button className="icon-btn" onClick={() => setModal(null)}><X size={18}/></button></div>
-            <p className="muted" style={{ lineHeight: 1.8 }}>فعلاً اطلاعات را وارد کن؛ اتصال دیکشنری آنلاین در مرحله بعد اضافه می‌شود.</p>
+            <p className="muted" style={{ lineHeight: 1.8 }}>کلمه را وارد کن و دکمه زیر را بزن تا اطلاعات واژه به‌صورت خودکار دریافت شود. برای این قابلیت به اینترنت نیاز است.</p>
             <form onSubmit={saveWord}>
               <div className="form-grid">
                 <div className="form-field"><label>واژه انگلیسی *</label>{input("word", "e.g. thoughtful", true)}</div>
@@ -301,7 +385,8 @@ export default function Home() {
                 <div className="form-field"><label>سطح تقریبی</label><select className="field" value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}>{levels.map(l => <option key={l}>{l}</option>)}</select></div>
                 <div className="form-field"><label>دسته‌بندی</label><select className="field" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>{categories.map(c => <option key={c}>{c}</option>)}</select></div>
               </div>
-              <div className="form-field"><label>تعریف انگلیسی (اختیاری)</label>{input("definition", "A clear, simple definition")}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 16 }}><button className="btn btn-primary" type="button" onClick={enrichWord} disabled={enriching}>{enriching ? "در حال جست‌وجو…" : "✨ تکمیل خودکار اطلاعات"}</button>{enrichMessage && <span className="muted" role="status">{enrichMessage}</span>}</div>
+              <div className="form-field"><label>تعریف انگلیسی</label>{input("definition", "Automatically filled definition")}</div>
               <div className="form-field"><label>مثال انگلیسی</label>{input("example", "A natural example sentence")}</div>
               <div className="form-field"><label>ترجمه مثال</label>{input("exampleFa", "ترجمه فارسی جمله")}</div>
               <div className="form-grid">
@@ -340,14 +425,14 @@ export default function Home() {
               <div style={{ textAlign: "center", padding: "25px 0" }}>
                 <div className="stat-icon mint" style={{ margin: "0 auto 15px", width: 58, height: 58 }}><GraduationCap size={27}/></div>
                 <h2>آفرین، تمرین تمام شد!</h2>
-                <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {Math.min(10, words.length)}</span></div>
+                <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {quizTotal}</span></div>
                 <p className="muted">پاسخ درست در این دور. تکرار منظم به تثبیت حافظه کمک می‌کند.</p>
                 <button className="btn btn-primary" onClick={startQuiz}><RotateCcw size={16}/> دوباره تمرین کن</button>
               </div>
             ) : quizWord ? (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}><span className="muted">سؤال {quizIndex + 1} از {Math.min(10, words.length)}</span><span className="level">امتیاز: {quizScore}</span></div>
-                <div className="quiz-question"><span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-block" }}>{quizWord.word}</span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>معنی درست این واژه کدام است؟</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}><span className="muted">سؤال {quizIndex + 1} از {quizTotal}</span><span className="level">امتیاز: {quizScore}</span></div>
+                <div className="quiz-question"><span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}><span>{quizWord.word}</span><button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button></span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>معنی درست این واژه کدام است؟</span></div>
                 <div className="quiz-options">
                   {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{option.meaning}</button>)}
                 </div>
