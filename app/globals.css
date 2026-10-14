@@ -170,3 +170,12 @@ h1,h2,h3,p { margin-top:0; }
 .related-pick input { accent-color:#a78bfa; width:16px; height:16px; }
 .related-pick span:nth-child(2) { color:#c7baff; overflow-wrap:anywhere; }
 .related-pick-meaning { color:#d7d7e2; text-align:right; }
+
+
+/* Keep the extra backup controls usable on narrow mobile screens. */
+.topbar { flex-wrap: wrap; }
+.top-actions { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 560px) {
+  .top-actions { flex: 1 1 100%; justify-content: flex-start; }
+  .top-actions .btn { white-space: nowrap; }
+}
