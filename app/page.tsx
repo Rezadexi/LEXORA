@@ -7,6 +7,8 @@ import {
   Trash2, Volume2, X, Zap, Bookmark, RotateCcw
 } from "lucide-react";
 
+type DictionaryDefinition = { definition?: string; example?: string; synonyms?: string[]; antonyms?: string[] };
+type DictionaryMeaning = { definitions?: DictionaryDefinition[]; synonyms?: string[]; antonyms?: string[] };
 type Word = {
   id: string;
   word: string;
@@ -155,10 +157,10 @@ export default function Home() {
       const data = await response.json();
       const entry = Array.isArray(data) ? data[0] : null;
       const meanings = Array.isArray(entry?.meanings) ? entry.meanings : [];
-      const definition = meanings.flatMap((m: any) => (m.definitions ?? []).map((d: any) => d.definition)).find(Boolean) ?? "";
-      const example = meanings.flatMap((m: any) => (m.definitions ?? []).map((d: any) => d.example)).find(Boolean) ?? "";
-      const relatedSynonyms = [...new Set(meanings.flatMap((m: any) => [...(m.synonyms ?? []), ...(m.definitions ?? []).flatMap((d: any) => d.synonyms ?? [])]))].filter((v: string) => v.toLowerCase() !== term.toLowerCase()).slice(0, 4) as string[];
-      const relatedAntonyms = [...new Set(meanings.flatMap((m: any) => [...(m.antonyms ?? []), ...(m.definitions ?? []).flatMap((d: any) => d.antonyms ?? [])]))].slice(0, 4) as string[];
+      const definition = meanings.flatMap((m: DictionaryMeaning) => (m.definitions ?? []).map((d: DictionaryDefinition) => d.definition)).find(Boolean) ?? "";
+      const example = meanings.flatMap((m: DictionaryMeaning) => (m.definitions ?? []).map((d: DictionaryDefinition) => d.example)).find(Boolean) ?? "";
+      const relatedSynonyms = [...new Set(meanings.flatMap((m: DictionaryMeaning) => [...(m.synonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition) => d.synonyms ?? [])]))].filter((v: string) => v.toLowerCase() !== term.toLowerCase()).slice(0, 4) as string[];
+      const relatedAntonyms = [...new Set(meanings.flatMap((m: DictionaryMeaning) => [...(m.antonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition) => d.antonyms ?? [])]))].slice(0, 4) as string[];
       const [meaningFa, exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
         translateToPersian(term),
         translateToPersian(example),
