@@ -27,11 +27,12 @@ type Word = {
 
 type RelatedItem = { word: string; meaning: string; value: string };
 function parseRelatedItems(raw: string): RelatedItem[] {
-  return raw.split(/[،,;؛]/).map(part => part.trim()).filter(Boolean).map(part => {
+  const parts = raw.includes("||") ? raw.split(/\s*\|\|\s*/) : raw.split(/[،,;؛]/);
+  return parts.map(part => part.trim()).filter(Boolean).map(part => {
     const pieces = part.split(/\s+[—–-]\s+/);
     const word = pieces.shift()?.trim() ?? part;
     const meaning = pieces.join(" — ").trim();
-    return { word, meaning, value: meaning ? `${word} — ${meaning}` : word };
+    return { word, meaning, value: meaning ? word + " — " + meaning : word };
   }).filter(item => item.word);
 }
 
@@ -174,7 +175,7 @@ export default function Home() {
   }
 
   async function enrichWord() {
-    const term = form.word.trim();
+    let term = form.word.trim();
     if (!term) { setEnrichMessage("اول کلمه انگلیسی را وارد کن."); return; }
     if (!/^[a-zA-Z][a-zA-Z' -]{0,59}$/.test(term)) {
       setEnrichMessage("لطفاً یک واژه یا عبارت انگلیسی وارد کن.");
@@ -185,17 +186,21 @@ export default function Home() {
     setEnrichMessage("در حال دریافت اطلاعات…");
     try {
       type DictionaryResponse = Array<{ meanings?: DictionaryMeaning[] }>;
-      type RelatedWord = { word: string };
-      // Start all independent lookups together to avoid waiting for one provider before trying another.
-      const [dictionaryData, translatedMeaning, synonymData, antonymData] = await Promise.all([
-        fetchJson<DictionaryResponse>(
-          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term.toLowerCase())}`, 6500
-        ).catch(() => null as DictionaryResponse | null),
+      type RelatedWord = { word: string; score?: number };
+      let dictionaryData = await fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(term.toLowerCase()), 6500).catch(() => null as DictionaryResponse | null);
+      let spellingCorrection = "";
+      if (!dictionaryData?.[0]?.meanings?.length) {
+        const suggestions = await fetchJson<RelatedWord[]>("https://api.datamuse.com/words?sp=" + encodeURIComponent(term.toLowerCase()) + "&max=5", 4500).catch(() => [] as RelatedWord[]);
+        for (const candidate of suggestions) {
+          if (!candidate.word || candidate.word.toLowerCase() === term.toLowerCase() || candidate.word.includes(" ")) continue;
+          const verified = await fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(candidate.word), 4500).catch(() => null as DictionaryResponse | null);
+          if (verified?.[0]?.meanings?.length) { spellingCorrection = candidate.word; term = candidate.word; dictionaryData = verified; break; }
+        }
+      }
+      const [translatedMeaning, synonymData, antonymData] = await Promise.all([
         translateToPersian(term),
-        fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(term)}&max=4`, 4000)
-          .catch(() => [] as RelatedWord[]),
-        fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_ant=${encodeURIComponent(term)}&max=4`, 4000)
-          .catch(() => [] as RelatedWord[])
+        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_syn=" + encodeURIComponent(term) + "&max=4", 4000).catch(() => [] as RelatedWord[]),
+        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_ant=" + encodeURIComponent(term) + "&max=4", 4000).catch(() => [] as RelatedWord[])
       ]);
 
       let definition = "";
@@ -220,35 +225,23 @@ export default function Home() {
 
       const [exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
         translateToPersian(example),
-        Promise.all(relatedSynonyms.slice(0, 3).map(async w => {
-          const translation = await translateToPersian(w);
-          return translation ? `${w} — ${translation}` : w;
-        })),
-        Promise.all(relatedAntonyms.slice(0, 3).map(async w => {
-          const translation = await translateToPersian(w);
-          return translation ? `${w} — ${translation}` : w;
-        }))
+        Promise.all(relatedSynonyms.map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); })),
+        Promise.all(relatedAntonyms.map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); }))
       ]);
 
-      const hasTranslation = !!translatedMeaning;
       const hasAnyData = !!(definition || example || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
-      if (!hasAnyData) throw new Error("سرویس‌های واژه‌یابی در دسترس نیستند. چند لحظه بعد دوباره امتحان کن.");
-
+      if (!hasAnyData) throw new Error("دیکشنری پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.");
+      const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "");
+      const finalExample = example || (finalDefinition ? "I came across the word \"" + term + "\" while learning English." : "");
+      const finalExampleFa = exampleFa || (finalExample ? await translateToPersian(finalExample) : "");
       setForm(current => ({
-        ...current,
-        meaning: translatedMeaning || current.meaning || definition,
-        definition: definition || current.definition,
-        example: example || current.example,
-        exampleFa: exampleFa || current.exampleFa,
-        synonyms: synonymTranslations.join("، ") || relatedSynonyms.join("، ") || current.synonyms,
-        antonyms: antonymTranslations.join("، ") || relatedAntonyms.join("، ") || current.antonyms,
-        level: estimateLevel(term, definition || term),
-        category: inferCategory(term, definition)
+        ...current, word: term, meaning: translatedMeaning || current.meaning || definition,
+        definition: finalDefinition || current.definition, example: finalExample || current.example, exampleFa: finalExampleFa || current.exampleFa,
+        synonyms: synonymTranslations.join(" || ") || relatedSynonyms.map(w => w + " — معنی نامشخص").join(" || ") || current.synonyms,
+        antonyms: antonymTranslations.join(" || ") || relatedAntonyms.map(w => w + " — معنی نامشخص").join(" || ") || current.antonyms,
+        level: estimateLevel(term, definition || term), category: inferCategory(term, definition)
       }));
-
-      setEnrichMessage(!hasTranslation && !form.meaning.trim()
-        ? "اطلاعات انگلیسی تکمیل شد؛ سرویس ترجمه پاسخ نداد، پس تعریف انگلیسی در فیلد معنی قرار گرفت. می‌توانی آن را به فارسی اصلاح کنی."
-        : "تکمیل انجام شد. اطلاعات را بررسی کن؛ اگر سرویسی پاسخ ندهد، فیلدهای موجود حفظ می‌شوند.");
+      setEnrichMessage(spellingCorrection ? "املای واژه به «" + spellingCorrection + "» اصلاح شد و اطلاعاتش دریافت شد؛ بررسی‌اش کن." : (!definition || !example ? "مثال جایگزین ساخته شد چون دیکشنری مثال آماده نداشت؛ اطلاعات را بررسی کن." : "تکمیل انجام شد. اطلاعات را بررسی کن؛ اگر سرویسی پاسخ ندهد، فیلدهای موجود حفظ می‌شوند."));
     } catch (error) {
       setEnrichMessage(error instanceof Error ? `${error.message}؛ اطلاعات قبلی پاک نشد.` : "تکمیل خودکار ناموفق بود؛ دوباره امتحان کن.");
     } finally {
@@ -468,7 +461,7 @@ export default function Home() {
             <p className="muted" style={{ lineHeight: 1.8 }}>کلمه را وارد کن و دکمه زیر را بزن تا اطلاعات واژه به‌صورت خودکار دریافت شود. برای این قابلیت به اینترنت نیاز است.</p>
             <form onSubmit={saveWord}>
               <div className="form-grid">
-                <div className="form-field"><label>واژه انگلیسی *</label><div className="word-input-with-sound">{input("word", "e.g. thoughtful", true)}<button className="icon-btn" type="button" title="شنیدن تلفظ واژه" aria-label="شنیدن تلفظ واژه" onClick={() => form.word.trim() && speak(form.word.trim())}><Volume2 size={17}/></button></div></div>
+                <div className="form-field"><label>واژه انگلیسی *</label><div className="word-input-with-sound"><input className="field" value={form.word} required placeholder="e.g. thoughtful" onBlur={() => { if (form.word.trim() && !enriching) void enrichWord(); }} onChange={e => setForm(current => ({ ...current, word: e.target.value }))}/><button className="icon-btn" type="button" title="شنیدن تلفظ واژه" aria-label="شنیدن تلفظ واژه" onClick={() => form.word.trim() && speak(form.word.trim())}><Volume2 size={17}/></button></div></div>
                 <div className="form-field"><label>معنی فارسی *</label>{input("meaning", "مثلاً باملاحظه، متفکر", true)}</div>
                 <div className="form-field"><label>سطح تقریبی</label><select className="field" value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}>{levels.map(l => <option key={l}>{l}</option>)}</select></div>
                 <div className="form-field"><label>دسته‌بندی</label><select className="field" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>{categories.map(c => <option key={c}>{c}</option>)}</select></div>
@@ -478,8 +471,8 @@ export default function Home() {
               <div className="form-field"><label>مثال انگلیسی</label>{input("example", "A natural example sentence")}</div>
               <div className="form-field"><label>ترجمه مثال</label>{input("exampleFa", "ترجمه فارسی جمله")}</div>
               <div className="form-grid">
-                <div className="form-field"><label>مترادف‌ها (واژه — معنی)</label>{input("synonyms", "considerate — باملاحظه، caring — دلسوز")}</div>
-                <div className="form-field"><label>متضادها (واژه — معنی)</label>{input("antonyms", "careless — بی‌دقت، thoughtless — بی‌ملاحظه")}</div>
+                <div className="form-field"><label>مترادف‌ها (واژه — معنی)</label>{input("synonyms", "considerate — باملاحظه || caring — دلسوز")}</div>
+                <div className="form-field"><label>متضادها (واژه — معنی)</label>{input("antonyms", "careless — بی‌دقت || thoughtless — بی‌ملاحظه")}</div>
               </div>
               {(form.synonyms || form.antonyms) && <div className="related-pick-panel">
                 <div className="related-pick-title">افزودن واژه‌های مرتبط به بانک؟</div>
