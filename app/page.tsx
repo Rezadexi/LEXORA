@@ -175,14 +175,16 @@ export default function Home() {
     try {
       type DictionaryResponse = Array<{ meanings?: DictionaryMeaning[] }>;
       type RelatedWord = { word: string };
-      const dictionaryPromise = fetchJson<DictionaryResponse>(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term.toLowerCase())}`,
-        7000
-      );
-      const meaningPromise = translateToPersian(term);
-      const [dictionaryData, translatedMeaning] = await Promise.all([
-        dictionaryPromise.catch(() => null as DictionaryResponse | null),
-        meaningPromise.catch(() => "")
+      // Start all independent lookups together to avoid waiting for one provider before trying another.
+      const [dictionaryData, translatedMeaning, synonymData, antonymData] = await Promise.all([
+        fetchJson<DictionaryResponse>(
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term.toLowerCase())}`, 6500
+        ).catch(() => null as DictionaryResponse | null),
+        translateToPersian(term),
+        fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(term)}&max=4`, 4000)
+          .catch(() => [] as RelatedWord[]),
+        fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_ant=${encodeURIComponent(term)}&max=4`, 4000)
+          .catch(() => [] as RelatedWord[])
       ]);
 
       let definition = "";
@@ -202,24 +204,8 @@ export default function Home() {
           ...(m.definitions ?? []).flatMap(d => d.antonyms ?? [])
         ]))].slice(0, 4);
       }
-
-      // Datamuse provides a separate, keyless synonym/antonym source when the dictionary omits them.
-      if (!relatedSynonyms.length || !relatedAntonyms.length) {
-        const [synResult, antResult] = await Promise.allSettled([
-          !relatedSynonyms.length
-            ? fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(term)}&max=4`, 4500)
-            : Promise.resolve([] as RelatedWord[]),
-          !relatedAntonyms.length
-            ? fetchJson<RelatedWord[]>(`https://api.datamuse.com/words?rel_ant=${encodeURIComponent(term)}&max=4`, 4500)
-            : Promise.resolve([] as RelatedWord[])
-        ]);
-        if (synResult.status === "fulfilled" && !relatedSynonyms.length) {
-          relatedSynonyms = synResult.value.map(item => item.word).filter(Boolean).slice(0, 4);
-        }
-        if (antResult.status === "fulfilled" && !relatedAntonyms.length) {
-          relatedAntonyms = antResult.value.map(item => item.word).filter(Boolean).slice(0, 4);
-        }
-      }
+      if (!relatedSynonyms.length) relatedSynonyms = synonymData.map(item => item.word).filter(Boolean).slice(0, 4);
+      if (!relatedAntonyms.length) relatedAntonyms = antonymData.map(item => item.word).filter(Boolean).slice(0, 4);
 
       const [exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
         translateToPersian(example),
@@ -233,6 +219,7 @@ export default function Home() {
         }))
       ]);
 
+      const hasTranslation = !!translatedMeaning;
       const hasAnyData = !!(definition || example || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
       if (!hasAnyData) throw new Error("سرویس‌های واژه‌یابی در دسترس نیستند. چند لحظه بعد دوباره امتحان کن.");
 
@@ -248,11 +235,9 @@ export default function Home() {
         category: inferCategory(term, definition)
       }));
 
-      if (!translatedMeaning && !form.meaning.trim()) {
-        setEnrichMessage("اطلاعات انگلیسی تکمیل شد؛ سرویس ترجمه پاسخ نداد، پس تعریف انگلیسی در فیلد معنی قرار گرفت. می‌توانی آن را به فارسی اصلاح کنی.");
-      } else {
-        setEnrichMessage("تکمیل انجام شد. اطلاعات را بررسی کن؛ اگر سرویسی پاسخ ندهد، فیلدهای موجود حفظ می‌شوند.");
-      }
+      setEnrichMessage(!hasTranslation && !form.meaning.trim()
+        ? "اطلاعات انگلیسی تکمیل شد؛ سرویس ترجمه پاسخ نداد، پس تعریف انگلیسی در فیلد معنی قرار گرفت. می‌توانی آن را به فارسی اصلاح کنی."
+        : "تکمیل انجام شد. اطلاعات را بررسی کن؛ اگر سرویسی پاسخ ندهد، فیلدهای موجود حفظ می‌شوند.");
     } catch (error) {
       setEnrichMessage(error instanceof Error ? `${error.message}؛ اطلاعات قبلی پاک نشد.` : "تکمیل خودکار ناموفق بود؛ دوباره امتحان کن.");
     } finally {
