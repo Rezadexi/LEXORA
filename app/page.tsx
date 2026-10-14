@@ -68,6 +68,7 @@ export default function Home() {
   const [quizChoice, setQuizChoice] = useState<string | null>(null);
   const [quizScore, setQuizScore] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
+  const [quizOrder, setQuizOrder] = useState<Word[]>([]);
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
   const [form, setForm] = useState({
@@ -207,10 +208,15 @@ export default function Home() {
       alert("برای شروع آزمون، حداقل دو لغت در بانک لازم است.");
       return;
     }
-    setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setModal("quiz");
+    const priority = [...words].sort((a, b) => {
+      const rateA = a.reviews ? a.correct / a.reviews : 0;
+      const rateB = b.reviews ? b.correct / b.reviews : 0;
+      return rateA - rateB || a.reviews - b.reviews;
+    });
+    setQuizOrder(priority); setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setModal("quiz");
   }
 
-  const quizWord = words.length ? words[quizIndex % words.length] : null;
+  const quizWord = quizOrder.length ? quizOrder[quizIndex % quizOrder.length] : null;
   const quizOptions = useMemo(() => {
     if (!quizWord) return [];
     const others = words.filter(w => w.id !== quizWord.id).sort((a, b) => a.word.localeCompare(b.word)).slice(0, 3);
@@ -228,7 +234,7 @@ export default function Home() {
   }
 
   function nextQuestion() {
-    if (quizIndex + 1 >= Math.min(10, words.length)) setQuizDone(true);
+    if (quizIndex + 1 >= Math.min(10, quizOrder.length)) setQuizDone(true);
     else { setQuizIndex(i => i + 1); setQuizChoice(null); }
   }
 
@@ -409,7 +415,7 @@ export default function Home() {
               <div style={{ textAlign: "center", padding: "25px 0" }}>
                 <div className="stat-icon mint" style={{ margin: "0 auto 15px", width: 58, height: 58 }}><GraduationCap size={27}/></div>
                 <h2>آفرین، تمرین تمام شد!</h2>
-                <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {Math.min(10, words.length)}</span></div>
+                <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {Math.min(10, quizOrder.length)}</span></div>
                 <p className="muted">پاسخ درست در این دور. تکرار منظم به تثبیت حافظه کمک می‌کند.</p>
                 <button className="btn btn-primary" onClick={startQuiz}><RotateCcw size={16}/> دوباره تمرین کن</button>
               </div>
