@@ -180,14 +180,17 @@ export default function Home() {
         7000
       );
       const meaningPromise = translateToPersian(term);
-      const [dictionaryResult, meaningFa] = await Promise.allSettled([dictionaryPromise, meaningPromise]);
+      const [dictionaryData, translatedMeaning] = await Promise.all([
+        dictionaryPromise.catch(() => null as DictionaryResponse | null),
+        meaningPromise.catch(() => "")
+      ]);
 
       let definition = "";
       let example = "";
       let relatedSynonyms: string[] = [];
       let relatedAntonyms: string[] = [];
-      if (dictionaryResult.status === "fulfilled") {
-        const meanings = dictionaryResult.value[0]?.meanings ?? [];
+      if (dictionaryData) {
+        const meanings = dictionaryData[0]?.meanings ?? [];
         definition = meanings.flatMap(m => (m.definitions ?? []).map(d => d.definition ?? "")).find(Boolean) ?? "";
         example = meanings.flatMap(m => (m.definitions ?? []).map(d => d.example ?? "")).find(Boolean) ?? "";
         relatedSynonyms = [...new Set(meanings.flatMap(m => [
@@ -230,7 +233,6 @@ export default function Home() {
         }))
       ]);
 
-      const translatedMeaning = meaningFa.status === "fulfilled" ? meaningFa.value : "";
       const hasAnyData = !!(definition || example || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
       if (!hasAnyData) throw new Error("سرویس‌های واژه‌یابی در دسترس نیستند. چند لحظه بعد دوباره امتحان کن.");
 
