@@ -25,6 +25,16 @@ type Word = {
   reviews: number;
 };
 
+type RelatedItem = { word: string; meaning: string; value: string };
+function parseRelatedItems(raw: string): RelatedItem[] {
+  return raw.split(/[،,;؛]/).map(part => part.trim()).filter(Boolean).map(part => {
+    const pieces = part.split(/\s+[—–-]\s+/);
+    const word = pieces.shift()?.trim() ?? part;
+    const meaning = pieces.join(" — ").trim();
+    return { word, meaning, value: meaning ? `${word} — ${meaning}` : word };
+  }).filter(item => item.word);
+}
+
 const STORAGE_KEY = "lexora.words.v1";
 const demoWords: Word[] = [
   {
@@ -75,6 +85,7 @@ export default function Home() {
   const [retriedIds, setRetriedIds] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
+  const [checkedRelated, setCheckedRelated] = useState<string[]>([]);
   const [form, setForm] = useState({
     word: "", meaning: "", category: "Daily English", level: "نامشخص",
     definition: "", example: "", exampleFa: "", synonyms: "", antonyms: ""
@@ -231,7 +242,7 @@ export default function Home() {
         exampleFa: exampleFa || current.exampleFa,
         synonyms: synonymTranslations.join("، ") || relatedSynonyms.join("، ") || current.synonyms,
         antonyms: antonymTranslations.join("، ") || relatedAntonyms.join("، ") || current.antonyms,
-        level: definition ? estimateLevel(term, definition) : current.level,
+        level: estimateLevel(term, definition || term),
         category: inferCategory(term, definition)
       }));
 
@@ -247,6 +258,7 @@ export default function Home() {
 
   function openAdd() {
     setForm({ word: "", meaning: "", category: "Daily English", level: "نامشخص", definition: "", example: "", exampleFa: "", synonyms: "", antonyms: "" });
+    setCheckedRelated([]);
     setModal("add");
   }
 
@@ -257,7 +269,19 @@ export default function Home() {
       ...form, word: form.word.trim(), meaning: form.meaning.trim(),
       id: crypto.randomUUID(), createdAt: Date.now(), correct: 0, reviews: 0
     };
-    setWords(current => [newWord, ...current]);
+    const selectedRelatedWords = [...new Set(checkedRelated)].filter(w => w.trim() && w.toLowerCase() !== newWord.word.toLowerCase());
+    const relatedEntries: Word[] = selectedRelatedWords
+      .filter(w => !words.some(existing => existing.word.toLowerCase() === w.split(" — ")[0].trim().toLowerCase()))
+      .map(item => {
+        const [relatedWord, relatedMeaning] = item.split(" — ");
+        return {
+          id: crypto.randomUUID(), word: relatedWord.trim(), meaning: (relatedMeaning || "معنی وارد نشده").trim(),
+          category: newWord.category, level: estimateLevel(relatedWord.trim(), relatedWord.trim()),
+          definition: "", example: "", exampleFa: "", synonyms: "", antonyms: "",
+          createdAt: Date.now(), correct: 0, reviews: 0
+        };
+      });
+    setWords(current => [newWord, ...relatedEntries, ...current]);
     setModal(null);
     setQuery("");
     setFilter("همه");
@@ -444,7 +468,7 @@ export default function Home() {
             <p className="muted" style={{ lineHeight: 1.8 }}>کلمه را وارد کن و دکمه زیر را بزن تا اطلاعات واژه به‌صورت خودکار دریافت شود. برای این قابلیت به اینترنت نیاز است.</p>
             <form onSubmit={saveWord}>
               <div className="form-grid">
-                <div className="form-field"><label>واژه انگلیسی *</label>{input("word", "e.g. thoughtful", true)}</div>
+                <div className="form-field"><label>واژه انگلیسی *</label><div className="word-input-with-sound">{input("word", "e.g. thoughtful", true)}<button className="icon-btn" type="button" title="شنیدن تلفظ واژه" aria-label="شنیدن تلفظ واژه" onClick={() => form.word.trim() && speak(form.word.trim())}><Volume2 size={17}/></button></div></div>
                 <div className="form-field"><label>معنی فارسی *</label>{input("meaning", "مثلاً باملاحظه، متفکر", true)}</div>
                 <div className="form-field"><label>سطح تقریبی</label><select className="field" value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}>{levels.map(l => <option key={l}>{l}</option>)}</select></div>
                 <div className="form-field"><label>دسته‌بندی</label><select className="field" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>{categories.map(c => <option key={c}>{c}</option>)}</select></div>
@@ -454,9 +478,17 @@ export default function Home() {
               <div className="form-field"><label>مثال انگلیسی</label>{input("example", "A natural example sentence")}</div>
               <div className="form-field"><label>ترجمه مثال</label>{input("exampleFa", "ترجمه فارسی جمله")}</div>
               <div className="form-grid">
-                <div className="form-field"><label>مترادف‌ها</label>{input("synonyms", "e.g. considerate, caring")}</div>
-                <div className="form-field"><label>متضادها</label>{input("antonyms", "e.g. careless, thoughtless")}</div>
+                <div className="form-field"><label>مترادف‌ها (واژه — معنی)</label>{input("synonyms", "considerate — باملاحظه، caring — دلسوز")}</div>
+                <div className="form-field"><label>متضادها (واژه — معنی)</label>{input("antonyms", "careless — بی‌دقت، thoughtless — بی‌ملاحظه")}</div>
               </div>
+              {(form.synonyms || form.antonyms) && <div className="related-pick-panel">
+                <div className="related-pick-title">افزودن واژه‌های مرتبط به بانک؟</div>
+                <p className="muted">تیک هر کلمه‌ای را که می‌خواهی جداگانه در بانک ذخیره شود بزن.</p>
+                {[...parseRelatedItems(form.synonyms), ...parseRelatedItems(form.antonyms)].map((item, index) => <label className="related-pick" key={item.word + index}>
+                  <input type="checkbox" checked={checkedRelated.includes(item.value)} onChange={e => setCheckedRelated(current => e.target.checked ? [...current, item.value] : current.filter(v => v !== item.value))}/>
+                  <span dir="ltr">{item.word}</span><span className="related-pick-meaning">{item.meaning || "معنی نامشخص"}</span>
+                </label>)}
+              </div>}
               <div className="form-actions"><button className="btn btn-primary" type="submit"><Check size={16}/> ذخیره واژه</button><button className="btn" type="button" onClick={() => setModal(null)}>انصراف</button></div>
             </form>
           </div>
@@ -472,10 +504,11 @@ export default function Home() {
               <div className="detail-meaning">{selected.meaning}</div>
               <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}><span className="level">{selected.level}</span><span className="muted">{selected.category}</span><button className="icon-btn" onClick={() => speak(selected.word)} title="پخش تلفظ"><AudioLines size={16}/></button></div>
             </div>
-            {selected.definition && <div className="detail-section"><h3>DEFINITION</h3><p>{selected.definition}</p></div>}
+            {selected.definition && <div className="detail-section"><h3>DEFINITION · توضیح انگلیسی</h3><p>{selected.definition}</p>{selected.meaning && <div className="meaning-under-definition"><strong>معنی فارسی</strong><span>{selected.meaning}</span></div>}</div>}
+            {!selected.definition && selected.meaning && <div className="detail-section"><h3>معنی فارسی</h3><p>{selected.meaning}</p></div>}
             {selected.example && <div className="detail-section"><h3>EXAMPLE IN CONTEXT</h3><p dir="ltr" style={{ textAlign: "left" }}>{selected.example}</p>{selected.exampleFa && <p style={{ color: "#aaaabd", marginTop: 7 }}>{selected.exampleFa}</p>}</div>}
-            {selected.synonyms && <div className="detail-section"><h3>SYNONYMS</h3><p>{selected.synonyms}</p></div>}
-            {selected.antonyms && <div className="detail-section"><h3>ANTONYMS</h3><p>{selected.antonyms}</p></div>}
+            {selected.synonyms && <div className="detail-section"><h3>SYNONYMS · مترادف‌ها</h3><div className="related-columns">{parseRelatedItems(selected.synonyms).map((item, index) => <div className="related-line" key={item.word + index}><span dir="ltr">{item.word}</span><span>{item.meaning || "—"}</span></div>)}</div></div>}
+            {selected.antonyms && <div className="detail-section"><h3>ANTONYMS · متضادها</h3><div className="related-columns">{parseRelatedItems(selected.antonyms).map((item, index) => <div className="related-line" key={item.word + index}><span dir="ltr">{item.word}</span><span>{item.meaning || "—"}</span></div>)}</div></div>}
             <div className="form-actions"><button className="btn" onClick={() => { setModal(null); setSelected(null); }}><Check size={16}/> تمام</button>{!selected.id.startsWith("demo-") && <button className="btn" onClick={() => deleteWord(selected.id)}><Trash2 size={15}/> حذف واژه</button>}</div>
           </div>
         </div>
