@@ -401,7 +401,7 @@ export default function Home() {
           <h1>لغت یاد نگیر؛<br/><span style={{ color: "#b8a5ff" }}>به بخشی از ذهنت تبدیلش کن.</span></h1>
           <p>یک خانه برای تمام واژه‌هایی که در مسیر یادگیری پیدا می‌کنی؛ از اولین برخورد تا زمانی که بدون فکر از آن‌ها استفاده کنی.</p>
           <div className="hero-buttons">
-            <button className="btn btn-primary" onClick={startQuiz}><Brain size={17}/> شروع تمرین هوشمند <ArrowLeft size={15}/></button>
+            <button className="btn btn-primary" onClick={() => startQuiz()}><Brain size={17}/> شروع تمرین هوشمند <ArrowLeft size={15}/></button>
             <button className="btn" onClick={openAdd}><Plus size={16}/> ثبت یک واژه</button>
           </div>
         </div>
@@ -472,7 +472,7 @@ export default function Home() {
         <aside className="side-stack">
           <div className="panel side-panel">
             <div className="side-title"><span>مسیر یادگیری</span><Sparkles size={17} color="#b8a5ff"/></div>
-            <button className="quick-action" onClick={startQuiz}>
+            <button className="quick-action" onClick={() => startQuiz()}>
               <span className="quick-icon"><Brain size={18}/></span><span><strong>تمرین چهارگزینه‌ای</strong><small>بازیابی فعال و سنجش حافظه</small></span><ChevronLeft size={17} style={{ marginRight: "auto", color: "#777b8d" }}/>
             </button>
             <button className="quick-action" onClick={() => { setFilter("همه"); setQuery(""); document.querySelector(".words-panel")?.scrollIntoView({ behavior: "smooth" }); }}>
