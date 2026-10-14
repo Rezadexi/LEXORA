@@ -159,8 +159,8 @@ export default function Home() {
       const meanings = Array.isArray(entry?.meanings) ? entry.meanings : [];
       const definition = meanings.flatMap((m: DictionaryMeaning) => (m.definitions ?? []).map((d: DictionaryDefinition) => d.definition)).find(Boolean) ?? "";
       const example = meanings.flatMap((m: DictionaryMeaning) => (m.definitions ?? []).map((d: DictionaryDefinition) => d.example)).find(Boolean) ?? "";
-      const relatedSynonyms = [...new Set(meanings.flatMap((m: DictionaryMeaning) => [...(m.synonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition) => d.synonyms ?? [])]))].filter((v: string) => v.toLowerCase() !== term.toLowerCase()).slice(0, 4) as string[];
-      const relatedAntonyms = [...new Set(meanings.flatMap((m: DictionaryMeaning) => [...(m.antonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition) => d.antonyms ?? [])]))].slice(0, 4) as string[];
+      const relatedSynonyms: string[] = Array.from(new Set<string>(meanings.flatMap((m: DictionaryMeaning): string[] => [...(m.synonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition): string[] => d.synonyms ?? [])]))).filter(v => v.toLowerCase() !== term.toLowerCase()).slice(0, 4);
+      const relatedAntonyms: string[] = Array.from(new Set<string>(meanings.flatMap((m: DictionaryMeaning): string[] => [...(m.antonyms ?? []), ...(m.definitions ?? []).flatMap((d: DictionaryDefinition): string[] => d.antonyms ?? [])]))).slice(0, 4);
       const [meaningFa, exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
         translateToPersian(term),
         translateToPersian(example),
