@@ -24,6 +24,7 @@ type Word = {
   correct: number;
   reviews: number;
   lastReviewedAt?: number;
+  correctStreak?: number;
 };
 
 type RelatedItem = { word: string; meaning: string; value: string };
@@ -84,6 +85,8 @@ export default function Home() {
   const [quizDone, setQuizDone] = useState(false);
   const [quizOrder, setQuizOrder] = useState<Word[]>([]);
   const [quizTotal, setQuizTotal] = useState(0);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [wrongIds, setWrongIds] = useState<string[]>([]);
   const [retriedIds, setRetriedIds] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
@@ -114,7 +117,7 @@ export default function Home() {
     return matchesQuery && matchesFilter;
   }), [words, query, filter]);
 
-  const mastered = words.filter(w => w.reviews >= 5 && w.correct >= 4).length;
+  const mastered = words.filter(w => (w.correctStreak ?? 0) >= 5).length;
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const reviewedToday = words.filter(w => typeof w.lastReviewedAt === "number" && w.lastReviewedAt >= todayStart.getTime()).length;
   const progress = Math.min(100, Math.round((reviewedToday / 10) * 100));
@@ -216,19 +219,19 @@ export default function Home() {
         relatedSynonyms = [...new Set(meanings.flatMap(m => [
           ...(m.synonyms ?? []),
           ...(m.definitions ?? []).flatMap(d => d.synonyms ?? [])
-        ]))].filter(v => v.toLowerCase() !== term.toLowerCase()).slice(0, 4);
+        ]))].filter(v => v.toLowerCase() !== term.toLowerCase()).slice(0, 2);
         relatedAntonyms = [...new Set(meanings.flatMap(m => [
           ...(m.antonyms ?? []),
           ...(m.definitions ?? []).flatMap(d => d.antonyms ?? [])
         ]))].slice(0, 4);
       }
-      if (!relatedSynonyms.length) relatedSynonyms = synonymData.map(item => item.word).filter(Boolean).slice(0, 4);
-      if (!relatedAntonyms.length) relatedAntonyms = antonymData.map(item => item.word).filter(Boolean).slice(0, 4);
+      if (!relatedSynonyms.length) relatedSynonyms = synonymData.map(item => item.word).filter(Boolean).slice(0, 2);
+      if (!relatedAntonyms.length) relatedAntonyms = antonymData.map(item => item.word).filter(Boolean).slice(0, 2);
 
       const [exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
         translateToPersian(example),
-        Promise.all(relatedSynonyms.map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); })),
-        Promise.all(relatedAntonyms.map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); }))
+        Promise.all(relatedSynonyms.slice(0, 2).map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); })),
+        Promise.all(relatedAntonyms.slice(0, 2).map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); }))
       ]);
 
       const hasAnyData = !!(definition || example || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
@@ -292,17 +295,21 @@ export default function Home() {
     if (selected?.id === id) { setSelected(null); setModal(null); }
   }
 
-  function startQuiz() {
-    if (words.length < 2) {
-      alert("برای شروع آزمون، حداقل دو لغت در بانک لازم است.");
-      return;
-    }
-    const priority = [...words].sort((a, b) => {
-      const rateA = a.reviews ? a.correct / a.reviews : 0;
-      const rateB = b.reviews ? b.correct / b.reviews : 0;
-      return rateA - rateB || a.reviews - b.reviews;
+  function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong") {
+    if (!mode) { setQuizStarted(false); setQuizDone(false); setWrongIds([]); setModal("quiz"); return; }
+    const pool = words.filter(w => mode === "general" || (mode === "wrong"
+      ? wrongIds.includes(w.id)
+      : mode === "specialist" ? ((w.correctStreak ?? 0) < 5 && (w.reviews === 0 || w.correct < w.reviews))
+      : (w.correctStreak ?? 0) < 5));
+    if (pool.length < 2) { alert(mode === "wrong" ? "برای آزمون غلط‌ها، حداقل دو واژه غلط لازم است." : "برای این نوع آزمون حداقل دو واژه لازم است."); return; }
+    const priority = [...pool].sort((a, b) => {
+      const streakA = a.correctStreak ?? 0, streakB = b.correctStreak ?? 0;
+      const rateA = a.reviews ? a.correct / a.reviews : 0, rateB = b.reviews ? b.correct / b.reviews : 0;
+      return (mode === "general" ? 0 : streakA - streakB) || rateA - rateB || a.reviews - b.reviews;
     });
-    setQuizTotal(Math.min(10, priority.length)); setQuizOrder(priority); setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setRetriedIds(new Set()); setModal("quiz");
+    const size = mode === "wrong" ? priority.length : Math.min(10, priority.length);
+    setQuizOrder(priority.slice(0, size)); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
+    setQuizScore(0); setQuizDone(false); setQuizStarted(true); setWrongIds([]); setModal("quiz");
   }
 
   const quizWord = quizOrder.length ? quizOrder[quizIndex % quizOrder.length] : null;
@@ -317,18 +324,11 @@ export default function Home() {
     setQuizChoice(wordId);
     const correct = wordId === quizWord.id;
     if (correct) setQuizScore(s => s + 1);
+    if (!correct) setWrongIds(current => current.includes(quizWord.id) ? current : [...current, quizWord.id]);
     setWords(current => current.map(w => w.id === quizWord.id ? {
-      ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0), lastReviewedAt: Date.now()
+      ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0),
+      correctStreak: correct ? (w.correctStreak ?? 0) + 1 : 0, lastReviewedAt: Date.now()
     } : w));
-    if (!correct && !retriedIds.has(quizWord.id)) {
-      setQuizOrder(current => {
-        const updated = [...current];
-        updated.splice(Math.min(quizIndex + 2, updated.length), 0, quizWord);
-        return updated;
-      });
-      setQuizTotal(total => total + 1);
-      setRetriedIds(current => new Set(current).add(quizWord.id));
-    }
   }
 
   function nextQuestion() {
@@ -547,22 +547,37 @@ export default function Home() {
         <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal(null); }}>
           <div className="modal">
             <div className="modal-head"><div><span className="eyebrow">RECALL ARENA</span><h2 style={{ marginTop: 6 }}>تمرین واژگان</h2></div><button className="icon-btn" onClick={() => setModal(null)}><X size={18}/></button></div>
-            {quizDone ? (
+            {!quizStarted ? (
+              <div style={{ padding: "16px 0" }}>
+                <h3>نوع آزمون را انتخاب کن</h3>
+                <p className="muted">هر دور حداکثر ۱۰ سؤال دارد؛ واژه‌های دشوارتر اولویت می‌گیرند.</p>
+                <div className="quiz-options" style={{ marginTop: 16 }}>
+                  <button className="quiz-option" onClick={() => startQuiz("smart")}>آزمون هوشمند <small>واژه‌های یادنگرفته و دشوار</small></button>
+                  <button className="quiz-option" onClick={() => startQuiz("specialist")}>آزمون تخصصی <small>واژه‌های جدید و اشتباه‌شده</small></button>
+                  <button className="quiz-option" onClick={() => startQuiz("general")}>آزمون کلی <small>۱۰ واژه از کل بانک</small></button>
+                  <button className="quiz-option" disabled={wrongIds.length < 2} onClick={() => startQuiz("wrong")}>آزمون واژه‌های غلط ({wrongIds.length})</button>
+                </div>
+              </div>
+            ) : quizDone ? (
               <div style={{ textAlign: "center", padding: "25px 0" }}>
                 <div className="stat-icon mint" style={{ margin: "0 auto 15px", width: 58, height: 58 }}><GraduationCap size={27}/></div>
                 <h2>آفرین، تمرین تمام شد!</h2>
                 <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {quizTotal}</span></div>
-                <p className="muted">پاسخ درست در این دور. تکرار منظم به تثبیت حافظه کمک می‌کند.</p>
-                <button className="btn btn-primary" onClick={startQuiz}><RotateCcw size={16}/> دوباره تمرین کن</button>
+                <p className="muted">درصد پاسخ درست: {quizTotal ? Math.round(quizScore / quizTotal * 100) : 0}%</p>
+                <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap", margin: "18px 0" }}>
+                  <span className="level">درست: {quizScore}</span><span className="level">غلط: {wrongIds.length}</span><span className="level">تسلط کامل: {mastered} واژه</span>
+                </div>
+                {wrongIds.length >= 2 && <button className="btn" style={{ margin: "0 6px 10px" }} onClick={() => startQuiz("wrong")}>آزمون جداگانه واژه‌های غلط ({wrongIds.length})</button>}
+                <button className="btn btn-primary" onClick={() => startQuiz()}><RotateCcw size={16}/> انتخاب آزمون دیگر</button>
               </div>
-            ) : quizWord ? (
+            ) : quizStarted && quizWord ? (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}><span className="muted">سؤال {quizIndex + 1} از {quizTotal}</span><span className="level">امتیاز: {quizScore}</span></div>
                 <div className="quiz-question"><span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}><span>{quizWord.word}</span><button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button></span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>معنی درست این واژه کدام است؟</span></div>
                 <div className="quiz-options">
                   {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{option.meaning}</button>)}
                 </div>
-                {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizWord.meaning}`}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= Math.min(10, words.length) ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
+                {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizWord.meaning}`}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= quizTotal ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
               </>
             ) : <div className="empty">برای آزمون، ابتدا چند لغت ذخیره کن.</div>}
           </div>
