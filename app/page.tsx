@@ -69,6 +69,8 @@ export default function Home() {
   const [quizScore, setQuizScore] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
   const [quizOrder, setQuizOrder] = useState<Word[]>([]);
+  const [quizTotal, setQuizTotal] = useState(0);
+  const [retriedIds, setRetriedIds] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
   const [form, setForm] = useState({
