@@ -109,7 +109,7 @@ export default function Home() {
   }, [words, hydrated]);
 
   const filteredWords = useMemo(() => words.filter(w => {
-    const matchesQuery = `${w.word} ${w.meaning} ${w.category}`.toLowerCase().includes(query.toLowerCase().trim());
+    const matchesQuery = `${w.word} ${w.meaning} ${w.category} ${w.definition} ${w.example} ${w.synonyms} ${w.antonyms}`.toLowerCase().includes(query.toLowerCase().trim());
     const matchesFilter = filter === "همه" || w.level === filter || w.category === filter;
     return matchesQuery && matchesFilter;
   }), [words, query, filter]);
@@ -361,7 +361,7 @@ export default function Home() {
         })).filter(item => item.word && item.meaning);
       if (!imported.length) throw new Error("empty");
       const existing = new Set(words.map(w => w.word.trim().toLowerCase()));
-      const unique = imported.filter(w => !existing.has(w.word.trim().toLowerCase()));
+      const unique = imported.filter(w => { const key = w.word.trim().toLowerCase(); if (existing.has(key)) return false; existing.add(key); return true; });
       if (!unique.length) { alert("همهٔ واژه‌های فایل از قبل در بانک هستند؛ چیزی تغییر نکرد."); return; }
       if (!confirm(`${unique.length} واژهٔ جدید به بانک اضافه شود؟ واژه‌های فعلی حذف نمی‌شوند.`)) return;
       setWords(current => [...unique, ...current]);
