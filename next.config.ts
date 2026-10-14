@@ -1,7 +1,10 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep the app ready for later PWA/service-worker expansion.
+  output: "export",
+  basePath: "/LEXORA",
+  trailingSlash: true,
 };
 
 export default nextConfig;
