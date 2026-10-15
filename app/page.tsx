@@ -364,9 +364,15 @@ export default function Home() {
       if (mode === "due") return (a.nextReviewAt ?? 0) - (b.nextReviewAt ?? 0);
       return (mode === "general" ? 0 : streakA - streakB) || rateA - rateB || a.reviews - b.reviews;
     });
-    const size = Math.min(10, priority.length);
-    const selectedIds = new Set(priority.slice(0, size).map(w => w.id));
-    setQuizOrder(priority.slice(0, size)); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
+    // The full-bank exam includes every saved word. Other focused drills stay short, but randomize their selected set.
+    const size = mode === "general" ? priority.length : Math.min(10, priority.length);
+    const selected = priority.slice(0, size);
+    for (let i = selected.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [selected[i], selected[j]] = [selected[j], selected[i]];
+    }
+    const selectedIds = new Set(selected.map(w => w.id));
+    setQuizOrder(selected); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
     setQuizScore(0); setQuizDone(false); setQuizStarted(true);
     setWrongIds(mode === "wrong" ? wrongIds.filter(id => !selectedIds.has(id)) : []); setModal("quiz");
   }
@@ -374,8 +380,12 @@ export default function Home() {
   const quizWord = quizOrder.length ? quizOrder[quizIndex % quizOrder.length] : null;
   const quizOptions = useMemo(() => {
     if (!quizWord) return [];
-    const others = words.filter(w => w.id !== quizWord.id).sort((a, b) => a.word.localeCompare(b.word)).slice(0, 3);
-    return [...others, quizWord].sort((a, b) => (a.id + quizIndex).localeCompare(b.id + quizIndex));
+    const pool = words.filter(w => w.id !== quizWord.id);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return [...pool.slice(0, 3), quizWord].sort(() => Math.random() - 0.5);
   }, [quizWord, words, quizIndex]);
 
   function answerQuiz(wordId: string) {
@@ -627,7 +637,7 @@ export default function Home() {
             {!quizStarted ? (
               <div style={{ padding: "16px 0" }}>
                 <h3>نوع آزمون را انتخاب کن</h3>
-                <p className="muted">هر دور حداکثر ۱۰ سؤال دارد؛ واژه‌های دشوارتر اولویت می‌گیرند.</p>
+                <p className="muted">آزمون کلی از تمام واژه‌های بانک سؤال می‌سازد؛ ترتیب سؤال‌ها و گزینه‌ها تصادفی است. آزمون‌های تمرکزی کوتاه‌ترند.</p>
                 <div className="quiz-mode-section" style={{ marginTop: 18 }}>
                   <h4 style={{ margin: "0 0 8px", color: "#b8a5ff" }}>تمرین عمومی</h4>
                   <div className="quiz-options">
