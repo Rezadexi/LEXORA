@@ -86,10 +86,6 @@ function clozeExample(example: string, word: string): string {
   return example.slice(0, index) + "_____" + example.slice(index + word.length);
 }
 
-function deduplicateWords(items: Word[]): Word[] {");
-  return example.replace(new RegExp(escaped, "ig"), "_____");
-}
-
 function deduplicateWords(items: Word[]): Word[] {
   const byKey = new Map<string, Word>();
   for (const item of items) {
