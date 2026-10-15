@@ -155,12 +155,12 @@ export default function Home() {
     }
   }
 
-  async function translateToPersian(text: string): Promise<string> {
+  async function translateToPersian(text: string, timeoutMs = 4500): Promise<string> {
     if (!text.trim()) return "";
     try {
       const data = await fetchJson<{ responseData?: { translatedText?: string }; responseStatus?: number }>(
         `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en%7Cfa`,
-        4500
+        timeoutMs
       );
       const translated = String(data?.responseData?.translatedText ?? "").trim();
       if (data.responseStatus && data.responseStatus !== 200) return "";
@@ -204,7 +204,7 @@ export default function Home() {
       // Ask independent sources simultaneously and cap each request so one slow source cannot stall the form.
       const [dictionaryData, translatedMeaning, synonymData, antonymData] = await Promise.all([
         fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(term.toLowerCase()), 1500).catch(() => null as DictionaryResponse | null),
-        translateToPersian(term).catch(() => ""),
+        translateToPersian(term, 1500).catch(() => ""),
         fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_syn=" + encodeURIComponent(term) + "&max=2", 1300).catch(() => [] as RelatedWord[]),
         fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_ant=" + encodeURIComponent(term) + "&max=2", 1300).catch(() => [] as RelatedWord[])
       ]);
