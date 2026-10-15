@@ -179,3 +179,21 @@ h1,h2,h3,p { margin-top:0; }
   .top-actions { flex: 1 1 100%; justify-content: flex-start; }
   .top-actions .btn { white-space: nowrap; }
 }
+
+
+/* Compact category-first vocabulary browser */
+.category-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:start; }
+.category-card { min-width:0; border:1px solid var(--border); border-radius:15px; overflow:hidden; background:#ffffff03; }
+.category-toggle { width:100%; min-height:58px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px; text-align:right; color:var(--text); background:#ffffff04; border:0; cursor:pointer; }
+.category-toggle:hover { background:#a78bfa0c; }
+.category-toggle-main,.category-count { display:flex; align-items:center; gap:8px; min-width:0; }
+.category-toggle-main { color:#c7baff; }
+.category-toggle-main strong { overflow-wrap:anywhere; font-size:12px; }
+.category-count { color:var(--muted); font-size:11px; white-space:nowrap; }
+.category-word-list { border-top:1px solid var(--border); }
+.category-word-list .word-row { border-radius:0; border:0; border-bottom:1px solid var(--border); }
+.category-word-list .word-row:last-child { border-bottom:0; }
+@media (max-width:560px) {
+  .category-grid { grid-template-columns:1fr; gap:9px; }
+  .category-toggle { min-height:54px; padding:12px; }
+}
