@@ -76,12 +76,17 @@ const levels = ["A1", "A2", "B1", "B2", "C1", "C2", "نامشخص"];
 const categories = ["Daily English", "Work & study", "Personal growth", "Travel", "Academic", "Other"];
 
 function normalizeWordKey(value: string): string {
-  return value.normalize("NFKC").trim().toLocaleLowerCase().replace(/\\s+/g, " ");
+  return value.normalize("NFKC").trim().toLocaleLowerCase().replace(/\s+/g, " ");
 }
 
 function clozeExample(example: string, word: string): string {
   if (!example) return "I learned the word _____ while studying English.";
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\function deduplicateWords(items: Word[]): Word[] {");
+  const index = example.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
+  if (index < 0) return example;
+  return example.slice(0, index) + "_____" + example.slice(index + word.length);
+}
+
+function deduplicateWords(items: Word[]): Word[] {");
   return example.replace(new RegExp(escaped, "ig"), "_____");
 }
 
