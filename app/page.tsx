@@ -25,6 +25,9 @@ type Word = {
   reviews: number;
   lastReviewedAt?: number;
   correctStreak?: number;
+  nextReviewAt?: number;
+  intervalDays?: number;
+  lapses?: number;
 };
 
 type RelatedItem = { word: string; meaning: string; value: string };
@@ -72,6 +75,45 @@ const demoWords: Word[] = [
 const levels = ["A1", "A2", "B1", "B2", "C1", "C2", "نامشخص"];
 const categories = ["Daily English", "Work & study", "Personal growth", "Travel", "Academic", "Other"];
 
+function normalizeWordKey(value: string): string {
+  return value.normalize("NFKC").trim().toLocaleLowerCase().replace(/\\s+/g, " ");
+}
+
+function deduplicateWords(items: Word[]): Word[] {
+  const byKey = new Map<string, Word>();
+  for (const item of items) {
+    const key = normalizeWordKey(item.word || "");
+    if (!key) continue;
+    const existing = byKey.get(key);
+    if (!existing) { byKey.set(key, item); continue; }
+    // Keep the first stable ID, but preserve the richest content and the strongest learning history.
+    const preferred = [existing, item].sort((a, b) =>
+      [b.definition, b.example, b.exampleFa, b.synonyms, b.antonyms].filter(Boolean).join("").length -
+      [a.definition, a.example, a.exampleFa, a.synonyms, a.antonyms].filter(Boolean).join("").length
+    )[0];
+    byKey.set(key, {
+      ...existing,
+      meaning: existing.meaning && !existing.meaning.includes("در دسترس نیست") ? existing.meaning : (item.meaning || existing.meaning),
+      category: existing.category || item.category || "Other",
+      level: existing.level && existing.level !== "نامشخص" ? existing.level : (item.level || "نامشخص"),
+      definition: preferred.definition || existing.definition || item.definition || "",
+      example: preferred.example || existing.example || item.example || "",
+      exampleFa: preferred.exampleFa || existing.exampleFa || item.exampleFa || "",
+      synonyms: preferred.synonyms || existing.synonyms || item.synonyms || "",
+      antonyms: preferred.antonyms || existing.antonyms || item.antonyms || "",
+      createdAt: Math.min(existing.createdAt || Date.now(), item.createdAt || Date.now()),
+      correct: Math.max(existing.correct || 0, item.correct || 0),
+      reviews: Math.max(existing.reviews || 0, item.reviews || 0),
+      correctStreak: Math.max(existing.correctStreak || 0, item.correctStreak || 0),
+      lastReviewedAt: Math.max(existing.lastReviewedAt || 0, item.lastReviewedAt || 0) || undefined,
+      nextReviewAt: Math.min(existing.nextReviewAt || 0, item.nextReviewAt || 0) || undefined,
+      intervalDays: Math.max(existing.intervalDays || 0, item.intervalDays || 0) || undefined,
+      lapses: Math.max(existing.lapses || 0, item.lapses || 0)
+    });
+  }
+  return [...byKey.values()];
+}
+
 export default function Home() {
   const [words, setWords] = useState<Word[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -99,8 +141,11 @@ export default function Home() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setWords(JSON.parse(saved) as Word[]);
-      else setWords(demoWords);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Word[];
+        const unique = deduplicateWords(Array.isArray(parsed) ? parsed : []);
+        setWords(unique);
+      } else setWords(demoWords);
     } catch {
       setWords(demoWords);
     }
@@ -127,6 +172,8 @@ export default function Home() {
   }, [filteredWords]);
 
   const mastered = words.filter(w => (w.correctStreak ?? 0) >= 5).length;
+  const dueWords = words.filter(w => (w.nextReviewAt ?? 0) <= Date.now());
+  const weakWords = [...words].filter(w => w.reviews > 0 && (w.correct / Math.max(1, w.reviews)) < 0.6).sort((a, b) => (a.correct / Math.max(1, a.reviews)) - (b.correct / Math.max(1, b.reviews))).slice(0, 3);
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const reviewedToday = words.filter(w => typeof w.lastReviewedAt === "number" && w.lastReviewedAt >= todayStart.getTime()).length;
   const progress = Math.min(100, Math.round((reviewedToday / 10) * 100));
@@ -294,16 +341,18 @@ export default function Home() {
     if (selected?.id === id) { setSelected(null); setModal(null); }
   }
 
-  function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong") {
+  function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due") {
     if (!mode) { setQuizStarted(false); setQuizDone(false); setModal("quiz"); return; }
     const pool = words.filter(w => mode === "general" || (mode === "wrong"
       ? wrongIds.includes(w.id)
+      : mode === "due" ? (w.nextReviewAt ?? 0) <= Date.now()
       : mode === "specialist" ? ((w.correctStreak ?? 0) < 5 && (w.reviews === 0 || w.correct < w.reviews))
       : (w.correctStreak ?? 0) < 5));
-    if (pool.length < 2) { alert(mode === "wrong" ? "برای آزمون غلط‌ها، حداقل دو واژه غلط لازم است." : "برای این نوع آزمون حداقل دو واژه لازم است."); return; }
+    if (pool.length < (mode === "due" ? 1 : 2)) { alert(mode === "wrong" ? "برای آزمون غلط‌ها، حداقل دو واژه غلط لازم است." : mode === "due" ? "فعلاً واژه‌ای برای مرور موعددار نداری؛ عالیه!" : "برای این نوع آزمون حداقل دو واژه لازم است."); return; }
     const priority = [...pool].sort((a, b) => {
       const streakA = a.correctStreak ?? 0, streakB = b.correctStreak ?? 0;
       const rateA = a.reviews ? a.correct / a.reviews : 0, rateB = b.reviews ? b.correct / b.reviews : 0;
+      if (mode === "due") return (a.nextReviewAt ?? 0) - (b.nextReviewAt ?? 0);
       return (mode === "general" ? 0 : streakA - streakB) || rateA - rateB || a.reviews - b.reviews;
     });
     const size = Math.min(10, priority.length);
@@ -328,7 +377,11 @@ export default function Home() {
     if (!correct) setWrongIds(current => current.includes(quizWord.id) ? current : [...current, quizWord.id]);
     setWords(current => current.map(w => w.id === quizWord.id ? {
       ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0),
-      correctStreak: correct ? (w.correctStreak ?? 0) + 1 : 0, lastReviewedAt: Date.now()
+      correctStreak: correct ? (w.correctStreak ?? 0) + 1 : 0,
+      lapses: (w.lapses ?? 0) + (correct ? 0 : 1),
+      intervalDays: correct ? ([1, 3, 7, 14, 30][Math.min(4, w.correctStreak ?? 0)] ?? 30) : 0,
+      nextReviewAt: Date.now() + (correct ? ([1, 3, 7, 14, 30][Math.min(4, w.correctStreak ?? 0)] ?? 30) * 86400000 : 10 * 60000),
+      lastReviewedAt: Date.now()
     } : w));
   }
 
@@ -358,11 +411,15 @@ export default function Home() {
           definition: item.definition || "", example: item.example || "", exampleFa: item.exampleFa || "",
           synonyms: item.synonyms || "", antonyms: item.antonyms || "", createdAt: Number(item.createdAt) || Date.now(),
           correct: Math.max(0, Number(item.correct) || 0), reviews: Math.max(0, Number(item.reviews) || 0),
-          lastReviewedAt: Number(item.lastReviewedAt) || undefined
+          lastReviewedAt: Number(item.lastReviewedAt) || undefined,
+          nextReviewAt: Number(item.nextReviewAt) || undefined,
+          intervalDays: Math.max(0, Number(item.intervalDays) || 0),
+          correctStreak: Math.max(0, Number(item.correctStreak) || 0),
+          lapses: Math.max(0, Number(item.lapses) || 0)
         })).filter(item => item.word && item.meaning);
       if (!imported.length) throw new Error("empty");
-      const existing = new Set(words.map(w => w.word.trim().toLowerCase()));
-      const unique = imported.filter(w => { const key = w.word.trim().toLowerCase(); if (existing.has(key)) return false; existing.add(key); return true; });
+      const existing = new Set(words.map(w => normalizeWordKey(w.word)));
+      const unique = deduplicateWords(imported).filter(w => { const key = normalizeWordKey(w.word); if (existing.has(key)) return false; existing.add(key); return true; });
       if (!unique.length) { alert("همهٔ واژه‌های فایل از قبل در بانک هستند؛ چیزی تغییر نکرد."); return; }
       if (!confirm(`${unique.length} واژهٔ جدید به بانک اضافه شود؟ واژه‌های فعلی حذف نمی‌شوند.`)) return;
       setWords(current => [...unique, ...current]);
@@ -415,8 +472,9 @@ export default function Home() {
             <div className="progress-track"><div className="progress-fill" style={{ width: `${progress}%` }}/></div>
             <div className="muted">{progress}% از هدف روزانه بر اساس تمرین‌های امروز</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#b5b7c6", fontSize: 12 }}>
-            <Flame size={17} color="#ffbf7d"/> استمرار از شدت مهم‌تر است.
+          <div className="due-review-strip">
+            <div><strong>{dueWords.length}</strong><span>واژه آماده مرور</span></div>
+            <button className="btn btn-primary btn-small" onClick={() => startQuiz("due")}><RotateCcw size={14}/> مرور موعددار</button>
           </div>
         </div>
       </section>
@@ -491,13 +549,14 @@ export default function Home() {
             </button>
           </div>
           <div className="panel side-panel">
-            <div className="side-title"><span>یادداشت نسخه اولیه</span><CircleHelp size={17} color="#6ee7c2"/></div>
-            <p className="muted" style={{ lineHeight: 2, marginBottom: 0 }}>اطلاعات این نسخه روی همین مرورگر ذخیره می‌شود. برای حفظ واژه‌ها، هر از گاهی خروجی بانک را دانلود کن. اتصال دیکشنری آنلاین و مرور فاصله‌دار در مراحل بعدی اضافه می‌شوند.</p>
+            <div className="side-title"><span>رادار نقاط ضعف</span><Target size={17} color="#6ee7c2"/></div>
+            {weakWords.length ? <div className="weak-list">{weakWords.map(word => <div className="weak-row" key={word.id}><div><strong>{word.word}</strong><small>{word.correct}/{word.reviews} پاسخ درست</small></div><span>{Math.round(word.correct / Math.max(1, word.reviews) * 100)}%</span></div>)}</div> : <p className="muted" style={{ lineHeight: 2, marginBottom: 0 }}>هنوز داده کافی برای تشخیص نقاط ضعف نداریم. با چند دور تمرین، LEXORA لغت‌هایی را که بیشتر اشتباه می‌زنی مشخص می‌کند.</p>}
+            <p className="muted" style={{ lineHeight: 1.9, margin: "12px 0 0" }}>مرور فاصله‌دار: پاسخ غلط → ۱۰ دقیقه؛ پاسخ درست → فاصله مرور به‌تدریج تا ۳۰ روز افزایش می‌یابد.</p>
           </div>
         </aside>
       </section>
 
-      <footer className="footer"><span>LEXORA © 2026 · BUILD YOUR VOCABULARY, BUILD YOURSELF.</span><span>* شاخص تسلط فعلاً بر اساس تعداد تمرین‌ها محاسبه می‌شود.</span></footer>
+      <footer className="footer"><span>LEXORA © 2026 · BUILD YOUR VOCABULARY, BUILD YOURSELF.</span><span>تسلط با تکرار درست سنجیده می‌شود؛ مرور موعددار بر اساس عملکرد تنظیم می‌شود.</span></footer>
 
       {modal === "add" && (
         <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal(null); }}>
