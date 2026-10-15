@@ -129,6 +129,7 @@ export default function Home() {
   const [quizOrder, setQuizOrder] = useState<Word[]>([]);
   const [quizTotal, setQuizTotal] = useState(0);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [quizMode, setQuizMode] = useState<"smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze">("smart");
   const [wrongIds, setWrongIds] = useState<string[]>([]);
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
@@ -309,7 +310,7 @@ export default function Home() {
   function saveWord(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.word.trim() || !form.meaning.trim()) return;
-    if (words.some(w => w.word.trim().toLowerCase() === form.word.trim().toLowerCase())) {
+    if (words.some(w => normalizeWordKey(w.word) === normalizeWordKey(form.word))) {
       alert("این واژه از قبل در بانک وجود دارد. برای جلوگیری از تکرار، ذخیره نشد.");
       return;
     }
@@ -341,9 +342,10 @@ export default function Home() {
     if (selected?.id === id) { setSelected(null); setModal(null); }
   }
 
-  function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due") {
+  function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze") {
     if (!mode) { setQuizStarted(false); setQuizDone(false); setModal("quiz"); return; }
-    const pool = words.filter(w => mode === "general" || (mode === "wrong"
+    setQuizMode(mode);
+    const pool = words.filter(w => mode === "general" || mode === "reverse" || mode === "cloze" || (mode === "wrong"
       ? wrongIds.includes(w.id)
       : mode === "due" ? (w.nextReviewAt ?? 0) <= Date.now()
       : mode === "specialist" ? ((w.correctStreak ?? 0) < 5 && (w.reviews === 0 || w.correct < w.reviews))
@@ -624,6 +626,8 @@ export default function Home() {
                   <div className="quiz-options">
                     <button className="quiz-option" onClick={() => startQuiz("general")}>آزمون کلی <small>سؤال از همه واژه‌های بانک، حتی واژه‌های مسلط‌شده</small></button>
                     <button className="quiz-option" onClick={() => startQuiz("smart")}>آزمون هوشمند <small>تمرکز روی واژه‌های یادنگرفته و دشوار</small></button>
+                    <button className="quiz-option" onClick={() => startQuiz("reverse")}>آزمون معکوس <small>معنی فارسی را ببین و واژه انگلیسی را به یاد بیاور</small></button>
+                    <button className="quiz-option" onClick={() => startQuiz("cloze")}>تکمیل جمله <small>واژه مناسب را از روی جمله و مفهوم انتخاب کن</small></button>
                   </div>
                 </div>
                 <div className="quiz-mode-section" style={{ marginTop: 18 }}>
@@ -649,9 +653,9 @@ export default function Home() {
             ) : quizStarted && quizWord ? (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}><span className="muted">سؤال {quizIndex + 1} از {quizTotal}</span><span className="level">امتیاز: {quizScore}</span></div>
-                <div className="quiz-question"><span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}><span>{quizWord.word}</span><button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button></span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>معنی درست این واژه کدام است؟</span></div>
+                <div className="quiz-question"><span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}><span>{quizMode === "reverse" ? quizWord.meaning : quizMode === "cloze" ? (quizWord.example ? quizWord.example.replace(new RegExp(quizWord.word.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\<span>{quizWord.word}</span><button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button></span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>معنی درست این واژه کدام است؟</span></div>"), "ig"), "_____") : "I learned the word _____ while studying English.") : quizWord.word}</span>{quizMode !== "reverse" && <button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button>}</span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>{quizMode === "reverse" ? "کدام واژه با این معنی مطابقت دارد؟" : quizMode === "cloze" ? "کدام واژه جای خالی جمله را کامل می‌کند؟" : "معنی درست این واژه کدام است؟"}</span></div>
                 <div className="quiz-options">
-                  {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{option.meaning}</button>)}
+                  {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{quizMode === "reverse" || quizMode === "cloze" ? option.word : option.meaning}</button>)}
                 </div>
                 {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizWord.meaning}`}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= quizTotal ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
               </>
