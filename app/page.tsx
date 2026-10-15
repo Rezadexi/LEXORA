@@ -77,6 +77,7 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("همه");
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [modal, setModal] = useState<"add" | "detail" | "quiz" | null>(null);
   const [selected, setSelected] = useState<Word | null>(null);
   const [quizIndex, setQuizIndex] = useState(0);
@@ -115,6 +116,15 @@ export default function Home() {
     const matchesFilter = filter === "همه" || w.level === filter || w.category === filter;
     return matchesQuery && matchesFilter;
   }), [words, query, filter]);
+
+  const wordsByCategory = useMemo(() => {
+    const groups = new Map<string, Word[]>();
+    for (const word of filteredWords) {
+      const key = word.category || "Other";
+      groups.set(key, [...(groups.get(key) ?? []), word]);
+    }
+    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [filteredWords]);
 
   const mastered = words.filter(w => (w.correctStreak ?? 0) >= 5).length;
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -179,7 +189,7 @@ export default function Home() {
   }
 
   async function enrichWord() {
-    let term = form.word.trim();
+    const term = form.word.trim();
     if (!term) { setEnrichMessage("اول کلمه انگلیسی را وارد کن."); return; }
     if (!/^[a-zA-Z][a-zA-Z' -]{0,59}$/.test(term)) {
       setEnrichMessage("لطفاً یک واژه یا عبارت انگلیسی وارد کن.");
@@ -187,67 +197,57 @@ export default function Home() {
     }
 
     setEnriching(true);
-    setEnrichMessage("در حال دریافت اطلاعات…");
+    setEnrichMessage("در حال تکمیل سریع اطلاعات…");
+    type DictionaryResponse = Array<{ meanings?: DictionaryMeaning[] }>;
+    type RelatedWord = { word: string; score?: number };
     try {
-      type DictionaryResponse = Array<{ meanings?: DictionaryMeaning[] }>;
-      type RelatedWord = { word: string; score?: number };
-      let dictionaryData = await fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(term.toLowerCase()), 6500).catch(() => null as DictionaryResponse | null);
-      let spellingCorrection = "";
-      if (!dictionaryData?.[0]?.meanings?.length) {
-        const suggestions = await fetchJson<RelatedWord[]>("https://api.datamuse.com/words?sp=" + encodeURIComponent(term.toLowerCase()) + "&max=5", 4500).catch(() => [] as RelatedWord[]);
-        for (const candidate of suggestions) {
-          if (!candidate.word || candidate.word.toLowerCase() === term.toLowerCase() || candidate.word.includes(" ")) continue;
-          const verified = await fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(candidate.word), 4500).catch(() => null as DictionaryResponse | null);
-          if (verified?.[0]?.meanings?.length) { spellingCorrection = candidate.word; term = candidate.word; dictionaryData = verified; break; }
-        }
-      }
-      const [translatedMeaning, synonymData, antonymData] = await Promise.all([
-        translateToPersian(term),
-        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_syn=" + encodeURIComponent(term) + "&max=4", 4000).catch(() => [] as RelatedWord[]),
-        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_ant=" + encodeURIComponent(term) + "&max=4", 4000).catch(() => [] as RelatedWord[])
+      // Ask independent sources simultaneously and cap each request so one slow source cannot stall the form.
+      const [dictionaryData, translatedMeaning, synonymData, antonymData] = await Promise.all([
+        fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(term.toLowerCase()), 1500).catch(() => null as DictionaryResponse | null),
+        translateToPersian(term).catch(() => ""),
+        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_syn=" + encodeURIComponent(term) + "&max=2", 1300).catch(() => [] as RelatedWord[]),
+        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_ant=" + encodeURIComponent(term) + "&max=2", 1300).catch(() => [] as RelatedWord[])
       ]);
 
-      let definition = "";
-      let example = "";
-      let relatedSynonyms: string[] = [];
-      let relatedAntonyms: string[] = [];
-      if (dictionaryData) {
-        const meanings = dictionaryData[0]?.meanings ?? [];
-        definition = meanings.flatMap(m => (m.definitions ?? []).map(d => d.definition ?? "")).find(Boolean) ?? "";
-        example = meanings.flatMap(m => (m.definitions ?? []).map(d => d.example ?? "")).find(Boolean) ?? "";
-        relatedSynonyms = [...new Set(meanings.flatMap(m => [
-          ...(m.synonyms ?? []),
-          ...(m.definitions ?? []).flatMap(d => d.synonyms ?? [])
-        ]))].filter(v => v.toLowerCase() !== term.toLowerCase()).slice(0, 2);
-        relatedAntonyms = [...new Set(meanings.flatMap(m => [
-          ...(m.antonyms ?? []),
-          ...(m.definitions ?? []).flatMap(d => d.antonyms ?? [])
-        ]))].slice(0, 4);
-      }
-      if (!relatedSynonyms.length) relatedSynonyms = synonymData.map(item => item.word).filter(Boolean).slice(0, 2);
-      if (!relatedAntonyms.length) relatedAntonyms = antonymData.map(item => item.word).filter(Boolean).slice(0, 2);
+      const meanings = dictionaryData?.[0]?.meanings ?? [];
+      const definition = meanings.flatMap(m => (m.definitions ?? []).map(d => d.definition ?? "")).find(Boolean) ?? "";
+      const dictionaryExample = meanings.flatMap(m => (m.definitions ?? []).map(d => d.example ?? "")).find(Boolean) ?? "";
+      const relatedSynonyms = [...new Set([
+        ...meanings.flatMap(m => [...(m.synonyms ?? []), ...(m.definitions ?? []).flatMap(d => d.synonyms ?? [])]),
+        ...synonymData.map(item => item.word)
+      ])].filter(w => w && w.toLowerCase() !== term.toLowerCase()).slice(0, 2);
+      const relatedAntonyms = [...new Set([
+        ...meanings.flatMap(m => [...(m.antonyms ?? []), ...(m.definitions ?? []).flatMap(d => d.antonyms ?? [])]),
+        ...antonymData.map(item => item.word)
+      ])].filter(Boolean).slice(0, 2);
 
-      const [exampleFa, synonymTranslations, antonymTranslations] = await Promise.all([
-        translateToPersian(example),
-        Promise.all(relatedSynonyms.slice(0, 2).map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); })),
-        Promise.all(relatedAntonyms.slice(0, 2).map(async w => { const translation = await translateToPersian(w); return w + " — " + (translation || "معنی نامشخص"); }))
-      ]);
-
-      const hasAnyData = !!(definition || example || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
-      if (!hasAnyData) throw new Error("دیکشنری پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.");
-      const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "");
-      const finalExample = example || (finalDefinition ? "I learned the word " + term + " while studying English." : "");
-      const finalExampleFa = exampleFa || (finalExample ? await translateToPersian(finalExample) : "");
+      // Fill every field immediately; translation of optional example/related words never blocks completion.
+      const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "Definition unavailable from the dictionary.");
+      const finalExample = dictionaryExample || "I learned the word " + term + " while studying English.";
+      const relatedText = (items: string[]) => items.map(w => w + " — معنی نامشخص").join(" || ");
       setForm(current => ({
-        ...current, word: term, meaning: translatedMeaning || current.meaning || definition,
-        definition: finalDefinition || current.definition, example: finalExample || current.example, exampleFa: finalExampleFa || current.exampleFa,
-        synonyms: synonymTranslations.join(" || ") || relatedSynonyms.map(w => w + " — معنی نامشخص").join(" || ") || current.synonyms,
-        antonyms: antonymTranslations.join(" || ") || relatedAntonyms.map(w => w + " — معنی نامشخص").join(" || ") || current.antonyms,
-        level: estimateLevel(term, definition || term), category: inferCategory(term, definition)
+        ...current,
+        meaning: translatedMeaning || current.meaning || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
+        definition: finalDefinition,
+        example: finalExample,
+        exampleFa: current.exampleFa || "",
+        synonyms: relatedText(relatedSynonyms) || current.synonyms,
+        antonyms: relatedText(relatedAntonyms) || current.antonyms,
+        level: estimateLevel(term, definition || term),
+        category: inferCategory(term, definition)
       }));
-      setEnrichMessage(spellingCorrection ? "املای واژه به «" + spellingCorrection + "» اصلاح شد و اطلاعاتش دریافت شد؛ بررسی‌اش کن." : (!definition || !example ? "مثال جایگزین ساخته شد چون دیکشنری مثال آماده نداشت؛ اطلاعات را بررسی کن." : "تکمیل انجام شد. اطلاعات را بررسی کن؛ اگر سرویسی پاسخ ندهد، فیلدهای موجود حفظ می‌شوند."));
-    } catch (error) {
-      setEnrichMessage(error instanceof Error ? `${error.message}؛ اطلاعات قبلی پاک نشد.` : "تکمیل خودکار ناموفق بود؛ دوباره امتحان کن.");
+      const hasRemoteData = !!(definition || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
+      setEnrichMessage(hasRemoteData
+        ? "تکمیل سریع انجام شد؛ اگر معنی نامشخص است، آن را بررسی کن."
+        : "منابع آنلاین سریع پاسخ ندادند؛ فیلدهای جایگزین پر شدند. اتصال را بررسی کن.");
+      // Translate the example in the background without delaying the main autofill.
+      if (!form.exampleFa && dictionaryExample) {
+        void translateToPersian(dictionaryExample).then(translation => {
+          if (translation) setForm(current => current.word.trim().toLowerCase() === term.toLowerCase() ? { ...current, exampleFa: translation } : current);
+        });
+      }
+    } catch {
+      setEnrichMessage("تکمیل سریع انجام نشد؛ فیلدها را بررسی کن و دوباره امتحان کن.");
     } finally {
       setEnriching(false);
     }
@@ -451,21 +451,29 @@ export default function Home() {
               <button key={f} className={`chip ${filter === f ? "active" : ""}`} onClick={() => setFilter(f)}>{f}</button>
             ))}
           </div>
-          <div className="word-list">
-            {filteredWords.length ? filteredWords.map(word => (
-              <div className="word-row" key={word.id}>
-                <div className="word-main" style={{ cursor: "pointer" }} onClick={() => { setSelected(word); setModal("detail"); }}>
-                  <div className="word-top"><span className="word-en">{word.word}</span><span className="level">{word.level}</span></div>
-                  <div className="word-meaning">{word.meaning}</div>
-                  <div className="word-category">{word.category}</div>
-                </div>
-                <div className="row-actions">
-                  <button className="icon-btn" title="شنیدن تلفظ" onClick={() => speak(word.word)}><Volume2 size={16}/></button>
-                  <button className="icon-btn" title="جزئیات" onClick={() => { setSelected(word); setModal("detail"); }}><ChevronLeft size={17}/></button>
-                  {!word.id.startsWith("demo-") && <button className="icon-btn" title="حذف" onClick={() => deleteWord(word.id)}><Trash2 size={15}/></button>}
-                </div>
-              </div>
-            )) : <div className="empty">چیزی پیدا نشد. با افزودن یک واژه جدید شروع کن.</div>}
+          <div className="category-grid">
+            {wordsByCategory.length ? wordsByCategory.map(([category, categoryWords]) => {
+              const isExpanded = query.trim().length > 0 || expandedCategories.includes(category);
+              return <section className="category-card" key={category}>
+                <button className="category-toggle" aria-expanded={isExpanded} onClick={() => setExpandedCategories(current => current.includes(category) ? current.filter(item => item !== category) : [...current, category])}>
+                  <span className="category-toggle-main"><Layers3 size={17}/><strong>{category}</strong></span>
+                  <span className="category-count">{categoryWords.length} واژه <ChevronLeft size={16} style={{ transform: isExpanded ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform .18s" }}/></span>
+                </button>
+                {isExpanded && <div className="word-list category-word-list">
+                  {categoryWords.map(word => <div className="word-row" key={word.id}>
+                    <div className="word-main" style={{ cursor: "pointer" }} onClick={() => { setSelected(word); setModal("detail"); }}>
+                      <div className="word-top"><span className="word-en">{word.word}</span><span className="level">{word.level}</span></div>
+                      <div className="word-meaning">{word.meaning}</div>
+                    </div>
+                    <div className="row-actions">
+                      <button className="icon-btn" title="شنیدن تلفظ" onClick={() => speak(word.word)}><Volume2 size={16}/></button>
+                      <button className="icon-btn" title="جزئیات" onClick={() => { setSelected(word); setModal("detail"); }}><ChevronLeft size={17}/></button>
+                      {!word.id.startsWith("demo-") && <button className="icon-btn" title="حذف" onClick={() => deleteWord(word.id)}><Trash2 size={15}/></button>}
+                    </div>
+                  </div>)}
+                </div>}
+              </section>;
+            }) : <div className="empty">چیزی پیدا نشد. با افزودن یک واژه جدید شروع کن.</div>}
           </div>
         </div>
 
