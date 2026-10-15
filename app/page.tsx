@@ -79,6 +79,12 @@ function normalizeWordKey(value: string): string {
   return value.normalize("NFKC").trim().toLocaleLowerCase().replace(/\\s+/g, " ");
 }
 
+function clozeExample(example: string, word: string): string {
+  if (!example) return "I learned the word _____ while studying English.";
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\function deduplicateWords(items: Word[]): Word[] {");
+  return example.replace(new RegExp(escaped, "ig"), "_____");
+}
+
 function deduplicateWords(items: Word[]): Word[] {
   const byKey = new Map<string, Word>();
   for (const item of items) {
@@ -653,7 +659,16 @@ export default function Home() {
             ) : quizStarted && quizWord ? (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}><span className="muted">سؤال {quizIndex + 1} از {quizTotal}</span><span className="level">امتیاز: {quizScore}</span></div>
-                <div className="quiz-question"><span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}><span>{quizMode === "reverse" ? quizWord.meaning : quizMode === "cloze" ? (quizWord.example ? quizWord.example.replace(new RegExp(quizWord.word.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\<span>{quizWord.word}</span><button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button></span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>معنی درست این واژه کدام است؟</span></div>"), "ig"), "_____") : "I learned the word _____ while studying English.") : quizWord.word}</span>{quizMode !== "reverse" && <button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button>}</span><br/><span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>{quizMode === "reverse" ? "کدام واژه با این معنی مطابقت دارد؟" : quizMode === "cloze" ? "کدام واژه جای خالی جمله را کامل می‌کند؟" : "معنی درست این واژه کدام است؟"}</span></div>
+                <div className="quiz-question">
+                  <span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    <span>{quizMode === "reverse" ? quizWord.meaning : quizMode === "cloze" ? clozeExample(quizWord.example, quizWord.word) : quizWord.word}</span>
+                    {quizMode !== "reverse" && <button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button>}
+                  </span>
+                  <br/>
+                  <span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>
+                    {quizMode === "reverse" ? "کدام واژه با این معنی مطابقت دارد؟" : quizMode === "cloze" ? "کدام واژه جای خالی جمله را کامل می‌کند؟" : "معنی درست این واژه کدام است؟"}
+                  </span>
+                </div>
                 <div className="quiz-options">
                   {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{quizMode === "reverse" || quizMode === "cloze" ? option.word : option.meaning}</button>)}
                 </div>
