@@ -82,7 +82,7 @@ function normalizeWordKey(value: string): string {
 function clozeExample(example: string, word: string): string {
   if (!example) return "I learned the word _____ while studying English.";
   const index = example.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
-  if (index < 0) return example;
+  if (index < 0) return "I learned the word _____ while studying English.";
   return example.slice(0, index) + "_____" + example.slice(index + word.length);
 }
 
@@ -331,7 +331,7 @@ export default function Home() {
     };
     const selectedRelatedWords = [...new Set(checkedRelated)].filter(w => w.trim() && w.toLowerCase() !== newWord.word.toLowerCase());
     const relatedEntries: Word[] = selectedRelatedWords
-      .filter(w => !words.some(existing => existing.word.toLowerCase() === w.split(" — ")[0].trim().toLowerCase()))
+      .filter(w => !words.some(existing => normalizeWordKey(existing.word) === normalizeWordKey(w.split(" — ")[0])))
       .map(item => {
         const [relatedWord, relatedMeaning] = item.split(" — ");
         return {
