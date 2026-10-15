@@ -234,7 +234,7 @@ body {
     radial-gradient(ellipse at 6% 28%, rgba(73, 211, 190, .055), transparent 27%),
     radial-gradient(ellipse at 95% 82%, rgba(132, 97, 255, .055), transparent 28%),
     var(--bg);
-  background-attachment: fixed;
+  background-attachment: scroll;
   letter-spacing: -.01em;
 }
 button, input, select { -webkit-tap-highlight-color: transparent; }
