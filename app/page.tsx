@@ -174,16 +174,31 @@ export default function Home() {
     const groups = new Map<string, Word[]>();
     for (const word of filteredWords) {
       const key = word.category || "Other";
-      groups.set(key, [...(groups.get(key) ?? []), word]);
+      const group = groups.get(key);
+      if (group) group.push(word);
+      else groups.set(key, [word]);
     }
     return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [filteredWords]);
 
-  const mastered = words.filter(w => (w.correctStreak ?? 0) >= 5).length;
-  const dueWords = words.filter(w => (w.nextReviewAt ?? 0) <= Date.now());
-  const weakWords = [...words].filter(w => w.reviews > 0 && (w.correct / Math.max(1, w.reviews)) < 0.6).sort((a, b) => (a.correct / Math.max(1, a.reviews)) - (b.correct / Math.max(1, b.reviews))).slice(0, 3);
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const reviewedToday = words.filter(w => typeof w.lastReviewedAt === "number" && w.lastReviewedAt >= todayStart.getTime()).length;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const { mastered, dueWords, weakWords, reviewedToday } = useMemo(() => {
+    let masteredCount = 0;
+    let reviewedTodayCount = 0;
+    const due: Word[] = [];
+    const weak: Word[] = [];
+    const now = Date.now();
+    const today = todayStart.getTime();
+    for (const word of words) {
+      if ((word.correctStreak ?? 0) >= 5) masteredCount++;
+      if ((word.nextReviewAt ?? 0) <= now) due.push(word);
+      if (typeof word.lastReviewedAt === "number" && word.lastReviewedAt >= today) reviewedTodayCount++;
+      if (word.reviews > 0 && word.correct / Math.max(1, word.reviews) < 0.6) weak.push(word);
+    }
+    weak.sort((a, b) => a.correct / Math.max(1, a.reviews) - b.correct / Math.max(1, b.reviews));
+    return { mastered: masteredCount, dueWords: due, weakWords: weak.slice(0, 3), reviewedToday: reviewedTodayCount };
+  }, [words]);
   const progress = Math.min(100, Math.round((reviewedToday / 10) * 100));
 
   function speak(text: string) {
