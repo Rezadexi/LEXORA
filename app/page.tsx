@@ -181,14 +181,14 @@ export default function Home() {
     return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [filteredWords]);
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
   const { mastered, dueWords, weakWords, reviewedToday } = useMemo(() => {
     let masteredCount = 0;
     let reviewedTodayCount = 0;
     const due: Word[] = [];
     const weak: Word[] = [];
     const now = Date.now();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
     const today = todayStart.getTime();
     for (const word of words) {
       if ((word.correctStreak ?? 0) >= 5) masteredCount++;
