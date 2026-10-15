@@ -197,3 +197,20 @@ h1,h2,h3,p { margin-top:0; }
   .category-grid { grid-template-columns:1fr; gap:9px; }
   .category-toggle { min-height:54px; padding:12px; }
 }
+
+
+/* Adaptive review and learning analytics */
+.due-review-strip { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:17px; padding-top:15px; border-top:1px solid var(--border); }
+.due-review-strip > div { display:flex; flex-direction:column; gap:3px; }
+.due-review-strip strong { font:700 25px "DM Sans","Vazirmatn",sans-serif; color:#b8a5ff; direction:ltr; }
+.due-review-strip span { color:var(--muted); font-size:11px; }
+.weak-list { display:grid; gap:9px; }
+.weak-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 12px; border:1px solid var(--border); border-radius:12px; background:#ffffff03; }
+.weak-row > div { display:grid; gap:4px; min-width:0; }
+.weak-row strong { font:600 13px "DM Sans","Vazirmatn",sans-serif; direction:ltr; text-align:right; overflow-wrap:anywhere; }
+.weak-row small { color:var(--muted); font-size:10px; }
+.weak-row > span { color:#ffbf7d; font:700 13px "DM Sans",sans-serif; direction:ltr; }
+@media (max-width:560px) {
+  .due-review-strip { align-items:flex-start; flex-direction:column; }
+  .due-review-strip .btn { width:100%; }
+}
