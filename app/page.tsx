@@ -28,6 +28,10 @@ type Word = {
   nextReviewAt?: number;
   intervalDays?: number;
   lapses?: number;
+  academySeen?: number;
+  academyCorrectStreak?: number;
+  academyNextReviewAt?: number;
+  academyLastStudiedAt?: number;
 };
 
 type RelatedItem = { word: string; meaning: string; value: string };
@@ -127,7 +131,13 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("همه");
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-  const [modal, setModal] = useState<"add" | "detail" | "quiz" | null>(null);
+  const [modal, setModal] = useState<"add" | "detail" | "quiz" | "academy" | null>(null);
+  const [academyQueue, setAcademyQueue] = useState<Word[]>([]);
+  const [academyIndex, setAcademyIndex] = useState(0);
+  const [academyRevealed, setAcademyRevealed] = useState(false);
+  const [academyDone, setAcademyDone] = useState(false);
+  const [academyCorrect, setAcademyCorrect] = useState(0);
+  const [academyReviewed, setAcademyReviewed] = useState(0);
   const [selected, setSelected] = useState<Word | null>(null);
   const [quizIndex, setQuizIndex] = useState(0);
   const [quizChoice, setQuizChoice] = useState<string | null>(null);
@@ -364,6 +374,49 @@ export default function Home() {
     if (selected?.id === id) { setSelected(null); setModal(null); }
   }
 
+  function startAcademy() {
+    if (!words.length) { alert("اول چند واژه به بانک اضافه کن تا آکادمی بتواند به تو آموزش بدهد."); return; }
+    const now = Date.now();
+    const due = words.filter(w => (w.academyNextReviewAt ?? 0) <= now);
+    const candidates = due.length ? due : words.filter(w => (w.academyCorrectStreak ?? 0) < 5);
+    const ranked = [...(candidates.length ? candidates : words)].sort((a, b) => {
+      const aNew = (a.academySeen ?? 0) === 0 ? 0 : 1;
+      const bNew = (b.academySeen ?? 0) === 0 ? 0 : 1;
+      if (aNew !== bNew) return aNew - bNew;
+      const aStreak = a.academyCorrectStreak ?? 0;
+      const bStreak = b.academyCorrectStreak ?? 0;
+      if (aStreak !== bStreak) return aStreak - bStreak;
+      const aRate = a.reviews ? a.correct / a.reviews : 0;
+      const bRate = b.reviews ? b.correct / b.reviews : 0;
+      return aRate - bRate || (a.academyLastStudiedAt ?? 0) - (b.academyLastStudiedAt ?? 0);
+    });
+    const queue = ranked.slice(0, Math.min(10, ranked.length));
+    for (let i = queue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [queue[i], queue[j]] = [queue[j], queue[i]];
+    }
+    setAcademyQueue(queue); setAcademyIndex(0); setAcademyRevealed(false);
+    setAcademyDone(false); setAcademyCorrect(0); setAcademyReviewed(0); setModal("academy");
+  }
+
+  function rateAcademyWord(rating: "again" | "hard" | "good") {
+    const currentWord = academyQueue[academyIndex];
+    if (!currentWord) return;
+    const now = Date.now();
+    const previousStreak = currentWord.academyCorrectStreak ?? 0;
+    const nextStreak = rating === "again" ? 0 : previousStreak + 1;
+    const days = rating === "again" ? 0 : rating === "hard" ? 1 : [1, 3, 7, 14, 30][Math.min(4, previousStreak)];
+    const delay = rating === "again" ? 10 * 60 * 1000 : days * 86400000;
+    setWords(current => current.map(w => w.id === currentWord.id ? {
+      ...w, academySeen: (w.academySeen ?? 0) + 1, academyCorrectStreak: nextStreak,
+      academyNextReviewAt: now + delay, academyLastStudiedAt: now
+    } : w));
+    setAcademyReviewed(n => n + 1);
+    if (rating !== "again") setAcademyCorrect(n => n + 1);
+    if (academyIndex + 1 >= academyQueue.length) setAcademyDone(true);
+    else { setAcademyIndex(n => n + 1); setAcademyRevealed(false); }
+  }
+
   function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze") {
     if (!mode) { setQuizStarted(false); setQuizDone(false); setModal("quiz"); return; }
     setQuizMode(mode);
@@ -492,7 +545,8 @@ export default function Home() {
           <h1>لغت یاد نگیر؛<br/><span style={{ color: "#b8a5ff" }}>به بخشی از ذهنت تبدیلش کن.</span></h1>
           <p>یک خانه برای تمام واژه‌هایی که در مسیر یادگیری پیدا می‌کنی؛ از اولین برخورد تا زمانی که بدون فکر از آن‌ها استفاده کنی.</p>
           <div className="hero-buttons">
-            <button className="btn btn-primary" onClick={() => startQuiz()}><Brain size={17}/> شروع تمرین هوشمند <ArrowLeft size={15}/></button>
+            <button className="btn btn-primary" onClick={startAcademy}><GraduationCap size={17}/> شروع آموزش روزانه <ArrowLeft size={15}/></button>
+            <button className="btn" onClick={() => startQuiz()}><Brain size={17}/> آزمون هوشمند</button>
             <button className="btn" onClick={openAdd}><Plus size={16}/> ثبت یک واژه</button>
           </div>
         </div>
@@ -570,6 +624,12 @@ export default function Home() {
         </div>
 
         <aside className="side-stack">
+          <div className="panel side-panel academy-promo">
+            <div className="side-title"><span>LEXORA Academy</span><GraduationCap size={18} color="#b8a5ff"/></div>
+            <p className="muted" style={{ lineHeight: 1.9, margin: "0 0 12px" }}>کلمه را فقط نبین؛ از حافظه بیرون بکش، بازخورد بگیر و در فاصله‌های درست دوباره مرورش کن.</p>
+            <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={startAcademy}><Sparkles size={16}/> جلسه ۵ دقیقه‌ای من</button>
+            <div className="academy-mini-stats"><span>{words.filter(w => (w.academySeen ?? 0) === 0).length} واژه تازه</span><span>{words.filter(w => (w.academyNextReviewAt ?? 0) <= Date.now() && (w.academySeen ?? 0) > 0).length} آماده مرور</span></div>
+          </div>
           <div className="panel side-panel">
             <div className="side-title"><span>مسیر یادگیری</span><Sparkles size={17} color="#b8a5ff"/></div>
             <button className="quick-action" onClick={() => startQuiz()}>
@@ -591,6 +651,50 @@ export default function Home() {
       </section>
 
       <footer className="footer"><span>LEXORA © 2026 · BUILD YOUR VOCABULARY, BUILD YOURSELF.</span><span>تسلط با تکرار درست سنجیده می‌شود؛ مرور موعددار بر اساس عملکرد تنظیم می‌شود.</span></footer>
+
+      {modal === "academy" && (
+        <div className="modal-backdrop academy-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal(null); }}>
+          <div className="modal academy-modal">
+            <div className="modal-head"><div><span className="eyebrow">LEXORA ACADEMY · DAILY SESSION</span><h2 style={{ marginTop: 7 }}>یادگیری واقعی، نه حفظ موقت</h2></div><button className="icon-btn" onClick={() => setModal(null)} aria-label="بستن آموزش"><X size={18}/></button></div>
+            {academyDone ? (
+              <div className="academy-finish">
+                <div className="academy-orb"><GraduationCap size={30}/></div>
+                <h2>جلسه‌ات کامل شد ✨</h2>
+                <p className="muted">مهم نیست چند پاسخ اشتباه بود؛ هر بار که جواب را به یاد می‌آوری، مسیر یادگیری قوی‌تر می‌شود.</p>
+                <div className="academy-result-grid"><div><strong>{academyReviewed}</strong><span>واژه مرورشده</span></div><div><strong>{academyCorrect}</strong><span>پاسخ مطمئن</span></div><div><strong>{academyReviewed - academyCorrect}</strong><span>نیازمند مرور دوباره</span></div></div>
+                <button className="btn btn-primary" onClick={() => setModal(null)}>بازگشت به خانه <ArrowLeft size={15}/></button>
+                {words.some(w => (w.academyNextReviewAt ?? 0) <= Date.now() && (w.academySeen ?? 0) > 0) && <button className="btn" style={{ marginRight: 8 }} onClick={startAcademy}>یک دور دیگر</button>}
+              </div>
+            ) : academyQueue[academyIndex] ? (
+              <>
+                <div className="academy-progress-head"><span>جلسه کوتاه روزانه</span><span>{academyIndex + 1} از {academyQueue.length}</span></div>
+                <div className="progress-track academy-track"><div className="progress-fill" style={{ width: `${((academyIndex + (academyRevealed ? .5 : 0)) / academyQueue.length) * 100}%` }}/></div>
+                <div className="academy-card">
+                  <div className="academy-card-top"><span className="level">{academyQueue[academyIndex].level}</span><span className="academy-category">{academyQueue[academyIndex].category}</span></div>
+                  <div className="academy-word" dir="ltr">{academyQueue[academyIndex].word}</div>
+                  <button className="icon-btn academy-sound" title="شنیدن تلفظ" aria-label="شنیدن تلفظ" onClick={() => speak(academyQueue[academyIndex].word)}><Volume2 size={19}/></button>
+                  <p className="academy-prompt">قبل از دیدن پاسخ، سعی کن معنی را از حافظه به یاد بیاوری.</p>
+                  {!academyRevealed ? <button className="btn btn-primary academy-reveal" onClick={() => setAcademyRevealed(true)}><Brain size={17}/> نمایش پاسخ و مثال</button> : (
+                    <div className="academy-answer">
+                      <div className="academy-meaning">{academyQueue[academyIndex].meaning || "معنی فارسی هنوز ثبت نشده است."}</div>
+                      {academyQueue[academyIndex].definition && <div className="academy-definition">{academyQueue[academyIndex].definition}</div>}
+                      {academyQueue[academyIndex].example && <div className="academy-example"><p dir="ltr">{academyQueue[academyIndex].example}</p>{academyQueue[academyIndex].exampleFa && <p>{academyQueue[academyIndex].exampleFa}</p>}</div>}
+                      <div className="academy-recall-tip">حالا بدون نگاه‌کردن، معنی و کاربرد کلمه را یک بار با صدای بلند بگو.</div>
+                      <div className="academy-rating-label">چقدر راحت یادت آمد؟</div>
+                      <div className="academy-ratings">
+                        <button className="academy-rate again" onClick={() => rateAcademyWord("again")}><RotateCcw size={16}/><strong>یادم نیامد</strong><small>مرور دوباره در ۱۰ دقیقه</small></button>
+                        <button className="academy-rate hard" onClick={() => rateAcademyWord("hard")}><CircleHelp size={16}/><strong>با سختی</strong><small>مرور فردا</small></button>
+                        <button className="academy-rate good" onClick={() => rateAcademyWord("good")}><Check size={16}/><strong>بلدم</strong><small>فاصله مرور بیشتر</small></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <p className="academy-footnote">LEXORA پاسخ‌هایت را فقط روی همین دستگاه ذخیره می‌کند؛ بانک لغات فعلی دست‌نخورده می‌ماند.</p>
+              </>
+            ) : <div className="empty">برای شروع، چند واژه در بانک ذخیره کن.</div>}
+          </div>
+        </div>
+      )}
 
       {modal === "add" && (
         <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal(null); }}>
