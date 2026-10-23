@@ -149,6 +149,7 @@ export default function Home() {
   const [quizDone, setQuizDone] = useState(false);
   const [quizOrder, setQuizOrder] = useState<Word[]>([]);
   const [quizTotal, setQuizTotal] = useState(0);
+  const [quizAnswerOffset, setQuizAnswerOffset] = useState(0);
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizMode, setQuizMode] = useState<"smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze">("smart");
   const [wrongIds, setWrongIds] = useState<string[]>([]);
@@ -411,10 +412,26 @@ export default function Home() {
     const nextStreak = rating === "again" ? 0 : previousStreak + 1;
     const days = rating === "again" ? 0 : rating === "hard" ? 1 : [1, 3, 7, 14, 30][Math.min(4, previousStreak)];
     const delay = rating === "again" ? 10 * 60 * 1000 : days * 86400000;
-    setWords(current => current.map(w => w.id === currentWord.id ? {
-      ...w, academySeen: (w.academySeen ?? 0) + 1, academyCorrectStreak: nextStreak,
-      academyNextReviewAt: now + delay, academyLastStudiedAt: now
-    } : w));
+    setWords(current => current.map(w => {
+      if (w.id !== currentWord.id) return w;
+      const wasCorrect = rating !== "again";
+      const quizStreak = wasCorrect ? (w.correctStreak ?? 0) + 1 : 0;
+      const quizDays = rating === "again" ? 0 : rating === "hard" ? 1 : [1, 3, 7, 14, 30][Math.min(4, w.correctStreak ?? 0)];
+      return {
+        ...w,
+        academySeen: (w.academySeen ?? 0) + 1,
+        academyCorrectStreak: nextStreak,
+        academyNextReviewAt: now + delay,
+        academyLastStudiedAt: now,
+        reviews: (w.reviews ?? 0) + 1,
+        correct: (w.correct ?? 0) + (wasCorrect ? 1 : 0),
+        correctStreak: quizStreak,
+        lapses: (w.lapses ?? 0) + (wasCorrect ? 0 : 1),
+        intervalDays: quizDays,
+        nextReviewAt: now + (rating === "again" ? 10 * 60 * 1000 : quizDays * 86400000),
+        lastReviewedAt: now
+      };
+    }));
     setAcademyReviewed(n => n + 1);
     if (rating !== "again") setAcademyCorrect(n => n + 1);
     if (academyIndex + 1 >= academyQueue.length) setAcademyDone(true);
@@ -445,6 +462,7 @@ export default function Home() {
     }
     const selectedIds = new Set(selected.map(w => w.id));
     setQuizOrder(selected); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
+    setQuizAnswerOffset(Math.floor(Math.random() * 4));
     setQuizScore(0); setQuizDone(false); setQuizStarted(true);
     setWrongIds(mode === "wrong" ? wrongIds.filter(id => !selectedIds.has(id)) : []); setModal("quiz");
   }
@@ -453,12 +471,17 @@ export default function Home() {
   const quizOptions = useMemo(() => {
     if (!quizWord) return [];
     const pool = words.filter(w => w.id !== quizWord.id);
+    // Fisher–Yates gives distractors a fair shuffle; the correct answer rotates through positions.
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    return [...pool.slice(0, 3), quizWord].sort(() => Math.random() - 0.5);
-  }, [quizWord, words, quizIndex]);
+    const distractors = pool.slice(0, 3);
+    const options = [...distractors];
+    const correctSlot = (quizIndex + quizAnswerOffset) % (options.length + 1);
+    options.splice(correctSlot, 0, quizWord);
+    return options;
+  }, [quizWord, words, quizIndex, quizAnswerOffset]);
 
   function answerQuiz(wordId: string) {
     if (!quizWord || quizChoice) return;
@@ -810,7 +833,7 @@ export default function Home() {
                 <div className="quiz-options">
                   {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{quizMode === "reverse" || quizMode === "cloze" ? option.word : option.meaning}</button>)}
                 </div>
-                {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizWord.meaning}`}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= quizTotal ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
+                {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizWord.meaning}`}{quizWord.definition && <p style={{ margin: "8px 0 0", color: "#c7c8d6", lineHeight: 1.9 }}>{quizWord.definition}</p>}{quizWord.example && <p dir="ltr" style={{ textAlign: "left", margin: "8px 0 0", color: "#b8b9ca", lineHeight: 1.8 }}>{quizWord.example}</p>}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= quizTotal ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
               </>
             ) : <div className="empty">برای آزمون، ابتدا چند لغت ذخیره کن.</div>}
           </div>
