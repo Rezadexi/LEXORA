@@ -119,7 +119,11 @@ function deduplicateWords(items: Word[]): Word[] {
       lastReviewedAt: Math.max(existing.lastReviewedAt || 0, item.lastReviewedAt || 0) || undefined,
       nextReviewAt: Math.min(existing.nextReviewAt || 0, item.nextReviewAt || 0) || undefined,
       intervalDays: Math.max(existing.intervalDays || 0, item.intervalDays || 0) || undefined,
-      lapses: Math.max(existing.lapses || 0, item.lapses || 0)
+      lapses: Math.max(existing.lapses || 0, item.lapses || 0),
+      academySeen: Math.max(existing.academySeen || 0, item.academySeen || 0),
+      academyCorrectStreak: Math.max(existing.academyCorrectStreak || 0, item.academyCorrectStreak || 0),
+      academyNextReviewAt: Math.min(existing.academyNextReviewAt || 0, item.academyNextReviewAt || 0) || undefined,
+      academyLastStudiedAt: Math.max(existing.academyLastStudiedAt || 0, item.academyLastStudiedAt || 0) || undefined
     });
   }
   return [...byKey.values()];
@@ -502,7 +506,11 @@ export default function Home() {
           nextReviewAt: Number(item.nextReviewAt) || undefined,
           intervalDays: Math.max(0, Number(item.intervalDays) || 0),
           correctStreak: Math.max(0, Number(item.correctStreak) || 0),
-          lapses: Math.max(0, Number(item.lapses) || 0)
+          lapses: Math.max(0, Number(item.lapses) || 0),
+          academySeen: Math.max(0, Number(item.academySeen) || 0),
+          academyCorrectStreak: Math.max(0, Number(item.academyCorrectStreak) || 0),
+          academyNextReviewAt: Number(item.academyNextReviewAt) || undefined,
+          academyLastStudiedAt: Number(item.academyLastStudiedAt) || undefined
         })).filter(item => item.word && item.meaning);
       if (!imported.length) throw new Error("empty");
       const existing = new Set(words.map(w => normalizeWordKey(w.word)));
