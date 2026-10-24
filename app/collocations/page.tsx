@@ -115,7 +115,11 @@ export default function CollocationsPage() {
   }
 
   function startQuiz() {
-    const pool = filtered.length >= 2 ? filtered : phrases.filter(p => p.id !== filtered[0]?.id);
+    if (filtered.length < 2) {
+      window.alert("برای آزمون باید حداقل دو عبارت با فیلترهای فعلی پیدا شود.");
+      return;
+    }
+    const pool = filtered;
     setQuizQueue(shuffle(pool).slice(0, Math.min(10, pool.length)));
     setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setMode("quiz");
   }
