@@ -236,7 +236,7 @@ export default function CollocationsPage() {
             </article>;
           })}
         </section> : <div className="panel coll-empty"><Search size={24}/><strong>عبارتی پیدا نشد</strong><p>املای عبارت را تغییر بده یا بخشی از معنی فارسی را جست‌وجو کن.</p><button className="btn" onClick={() => {setQuery("");setLevel("همه سطح‌ها");setType("همه انواع");setCategory("همه موضوع‌ها");setOnlyFavorites(false);setShowCategories(true);}}>نمایش دسته‌بندی‌ها</button></div>}
-        </>}</>}
+        </>}</>
       </>}
 
       {mode === "learn" && <section className="panel coll-session">
