@@ -150,12 +150,12 @@ export default function CollocationsPage() {
   return (
     <main className="app-shell coll-page">
       <header className="topbar coll-topbar">
-        <Link className="brand coll-brand" href="/LEXORA/">
+        <Link className="brand coll-brand" href="/">
           <div className="brand-mark"><BookOpen size={22} strokeWidth={2.4}/></div>
           <div><div className="brand-name">LEXORA</div><div className="brand-sub">COLLOCATIONS & IDIOMS</div></div>
         </Link>
         <div className="coll-top-actions">
-          <Link className="btn btn-small" href="/LEXORA/"><Home size={15}/> صفحهٔ واژگان من</Link>
+          <Link className="btn btn-small" href="/"><Home size={15}/> صفحهٔ واژگان من</Link>
           <button className="btn btn-small" onClick={() => { setOnlyFavorites(v => !v); setMode("library"); }}><Heart size={15} fill={onlyFavorites ? "currentColor" : "none"}/>{onlyFavorites ? "همهٔ موارد" : "علاقه‌مندی‌ها"}</button>
         </div>
       </header>
