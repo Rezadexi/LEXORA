@@ -46,6 +46,7 @@ function parseRelatedItems(raw: string): RelatedItem[] {
 }
 
 const STORAGE_KEY = "lexora.words.v1";
+const ENRICH_CACHE_KEY = "lexora.enrich.cache.v1";
 const demoWords: Word[] = [
   {
     id: "demo-1", word: "Resilient", meaning: "تاب‌آور، انعطاف‌پذیر",
@@ -281,6 +282,17 @@ export default function Home() {
       return;
     }
 
+    // Reuse successful lookups so repeated words autofill instantly on this device.
+    try {
+      const cache = JSON.parse(localStorage.getItem(ENRICH_CACHE_KEY) || "{}") as Record<string, Partial<typeof form>>;
+      const cached = cache[normalizeWordKey(term)];
+      if (cached?.definition && cached?.meaning) {
+        setForm(current => ({ ...current, ...cached, word: term }));
+        setEnrichMessage("اطلاعات ذخیره‌شده فوراً بارگذاری شد.");
+        return;
+      }
+    } catch { /* Ignore an invalid or unavailable cache. */ }
+
     setEnriching(true);
     setEnrichMessage("در حال تکمیل سریع اطلاعات…");
     type DictionaryResponse = Array<{ meanings?: DictionaryMeaning[] }>;
@@ -288,9 +300,9 @@ export default function Home() {
     try {
       // Ask independent sources simultaneously and cap each request so one slow source cannot stall the form.
       const [dictionaryData, translatedMeaning, synonymData, antonymData] = await Promise.all([
-        fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(term.toLowerCase()), 1500).catch(() => null as DictionaryResponse | null),
-        translateToPersian(term, 1500).catch(() => ""),
-        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_syn=" + encodeURIComponent(term) + "&max=2", 1300).catch(() => [] as RelatedWord[]),
+        fetchJson<DictionaryResponse>("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(term.toLowerCase()), 900).catch(() => null as DictionaryResponse | null),
+        translateToPersian(term, 900).catch(() => ""),
+        fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_syn=" + encodeURIComponent(term) + "&max=2", 800).catch(() => [] as RelatedWord[]),
         fetchJson<RelatedWord[]>("https://api.datamuse.com/words?rel_ant=" + encodeURIComponent(term) + "&max=2", 1300).catch(() => [] as RelatedWord[])
       ]);
 
@@ -310,17 +322,23 @@ export default function Home() {
       const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "Definition unavailable from the dictionary.");
       const finalExample = dictionaryExample || "I learned the word " + term + " while studying English.";
       const relatedText = (items: string[]) => items.map(w => w + " — معنی نامشخص").join(" || ");
-      setForm(current => ({
-        ...current,
-        meaning: translatedMeaning || current.meaning || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
+      const enrichedFields = {
+        meaning: translatedMeaning || form.meaning || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
         definition: finalDefinition,
         example: finalExample,
-        exampleFa: current.exampleFa || "",
-        synonyms: relatedText(relatedSynonyms) || current.synonyms,
-        antonyms: relatedText(relatedAntonyms) || current.antonyms,
+        exampleFa: form.exampleFa || "",
+        synonyms: relatedText(relatedSynonyms) || form.synonyms,
+        antonyms: relatedText(relatedAntonyms) || form.antonyms,
         level: estimateLevel(term, definition || term),
         category: inferCategory(term, definition)
-      }));
+      };
+      setForm(current => ({ ...current, ...enrichedFields }));
+      try {
+        const cache = JSON.parse(localStorage.getItem(ENRICH_CACHE_KEY) || "{}") as Record<string, Partial<typeof form>>;
+        cache[normalizeWordKey(term)] = enrichedFields;
+        const entries = Object.entries(cache);
+        localStorage.setItem(ENRICH_CACHE_KEY, JSON.stringify(Object.fromEntries(entries.slice(-150))));
+      } catch { /* Caching is optional; the form must still work without storage. */ }
       const hasRemoteData = !!(definition || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
       setEnrichMessage(hasRemoteData
         ? "تکمیل سریع انجام شد؛ اگر معنی نامشخص است، آن را بررسی کن."
