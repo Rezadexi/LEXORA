@@ -31,6 +31,7 @@ export default function CollocationsPage() {
   const [type, setType] = useState("همه انواع");
   const [category, setCategory] = useState("همه موضوع‌ها");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [showCategories, setShowCategories] = useState(true);
   const [mode, setMode] = useState<"library" | "learn" | "quiz">("library");
   const [revealed, setRevealed] = useState<string[]>([]);
   const [learnQueue, setLearnQueue] = useState<Phrase[]>([]);
@@ -194,7 +195,29 @@ export default function CollocationsPage() {
           <div className="coll-results-line"><span>{filtered.length} عبارت پیدا شد</span><button className="text-action" onClick={() => { setQuery(""); setLevel("همه سطح‌ها"); setType("همه انواع"); setCategory("همه موضوع‌ها"); setOnlyFavorites(false); }}>پاک‌کردن فیلترها</button></div>
         </section>
 
-        <div className="coll-section-heading"><div><h2>کتابخانهٔ عبارت‌ها</h2><p>هر عبارت را باز کن، معنی و کاربردش را ببین و با صدای بلند تکرار کن.</p></div><span className="level">{filtered.length} RESULTS</span></div>
+        <>{showCategories ? <>
+          <div className="coll-section-heading"><div><h2>از کجا شروع کنیم؟</h2><p>اول نوع عبارت یا موضوع را انتخاب کن؛ لازم نیست در فهرست بلند عبارت‌ها بگردی.</p></div><span className="level">{phrases.length} ITEMS</span></div>
+          <section className="coll-type-shortcuts">
+            {[
+              { value: "Collocation", title: "هم‌آیندها", desc: "ترکیب‌های طبیعی کلمات", icon: "Aa" },
+              { value: "Idiom", title: "اصطلاحات", desc: "عبارت‌های کنایی و روزمره", icon: "✳" },
+              { value: "Phrasal verb", title: "افعال عبارتی", desc: "فعل + حرف اضافه یا قید", icon: "↗" }
+            ].map(item => <button className="coll-type-tile" key={item.value} onClick={() => {setType(item.value);setCategory("همه موضوع‌ها");setShowCategories(false);}}>
+              <span className="coll-type-symbol">{item.icon}</span><span className="coll-type-tile-copy"><strong>{item.title}</strong><small>{item.desc}</small></span><span className="coll-type-count">{phrases.filter(p => p.type === item.value).length}</span>
+            </button>)}
+          </section>
+          <div className="coll-section-heading"><div><h2>دسته‌بندی بر اساس موضوع</h2><p>فقط عبارت‌های مربوط به کار، احساسات، سفر یا یادگیری را ببین.</p></div></div>
+          <section className="coll-category-grid">
+            {categories.filter(c => c !== "همه موضوع‌ها").map(cat => {
+              const count = phrases.filter(p => p.category === cat && (type === "همه انواع" || p.type === type) && (level === "همه سطح‌ها" || p.level === level)).length;
+              return <button className="coll-category-tile" key={cat} onClick={() => {setCategory(cat);setShowCategories(false);}}>
+                <span className="coll-category-name">{cat}</span><span className="coll-category-bottom"><small>{count} عبارت</small><ArrowLeft size={15}/></span>
+              </button>;
+            })}
+          </section>
+          <button className="coll-browse-all" onClick={() => {setCategory("همه موضوع‌ها");setType("همه انواع");setShowCategories(false);}}>نمایش همهٔ عبارت‌ها <ArrowLeft size={15}/></button>
+        </> : <>
+        <div className="coll-section-heading"><div><h2>عبارت‌های این دسته</h2><p>برای بازگشت به دسته‌بندی‌ها از دکمهٔ سمت چپ استفاده کن.</p></div><button className="btn btn-small" onClick={() => setShowCategories(true)}><ArrowRight size={14}/> دسته‌بندی‌ها</button></div>
         {filtered.length ? <section className="coll-card-grid">
           {filtered.map((p, index) => {
             const open = revealed.includes(p.id);
@@ -212,7 +235,8 @@ export default function CollocationsPage() {
               <button className="coll-card-toggle" onClick={() => toggleReveal(p.id)}>{open ? "بستن توضیحات" : "نمایش معنی و مثال"} <ChevronDown size={14}/></button>
             </article>;
           })}
-        </section> : <div className="panel coll-empty"><Search size={24}/><strong>عبارتی پیدا نشد</strong><p>املای عبارت را تغییر بده یا بخشی از معنی فارسی را جست‌وجو کن.</p><button className="btn" onClick={() => {setQuery("");setLevel("همه سطح‌ها");setType("همه انواع");setCategory("همه موضوع‌ها");setOnlyFavorites(false);}}>نمایش همهٔ عبارت‌ها</button></div>}
+        </section> : <div className="panel coll-empty"><Search size={24}/><strong>عبارتی پیدا نشد</strong><p>املای عبارت را تغییر بده یا بخشی از معنی فارسی را جست‌وجو کن.</p><button className="btn" onClick={() => {setQuery("");setLevel("همه سطح‌ها");setType("همه انواع");setCategory("همه موضوع‌ها");setOnlyFavorites(false);setShowCategories(true);}}>نمایش دسته‌بندی‌ها</button></div>}
+        </>}</>}
       </>}
 
       {mode === "learn" && <section className="panel coll-session">
