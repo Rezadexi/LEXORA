@@ -542,3 +542,22 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .coll-results-line { font-size:10px; }
 }
 @media (prefers-reduced-motion:reduce) { .coll-card,.coll-answer { transition:none; animation:none; } }
+
+
+/* Category-first navigation for the phrase library */
+.coll-type-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:22px; }
+.coll-type-tile { display:flex; align-items:center; gap:12px; min-width:0; padding:16px; border:1px solid var(--border); border-radius:16px; background:linear-gradient(145deg,rgba(184,165,255,.075),rgba(255,255,255,.015)); color:var(--text); text-align:right; cursor:pointer; transition:border-color .18s,transform .18s; }
+.coll-type-tile:hover,.coll-category-tile:hover { border-color:rgba(184,165,255,.45); transform:translateY(-2px); }
+.coll-type-symbol { display:grid; place-items:center; flex:0 0 42px; width:42px; height:42px; border-radius:13px; background:rgba(184,165,255,.12); color:#d0c5ff; font:700 17px "DM Sans","Vazirmatn",sans-serif; }
+.coll-type-tile-copy { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.coll-type-tile-copy strong { font-size:13px; }
+.coll-type-tile-copy small { color:var(--muted); font-size:10px; line-height:1.7; }
+.coll-type-count { margin-right:auto; align-self:flex-start; color:#c7baff; font:700 13px "DM Sans",sans-serif; }
+.coll-category-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.coll-category-tile { display:flex; flex-direction:column; justify-content:space-between; gap:18px; min-width:0; min-height:90px; padding:14px; border:1px solid var(--border); border-radius:13px; background:rgba(255,255,255,.018); color:var(--text); text-align:right; cursor:pointer; transition:border-color .18s,transform .18s; }
+.coll-category-name { font-size:12px; font-weight:700; overflow-wrap:anywhere; }
+.coll-category-bottom { display:flex; justify-content:space-between; align-items:center; gap:8px; color:#b8a5ff; }
+.coll-category-bottom small { color:var(--muted); font-size:10px; }
+.coll-browse-all { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:13px; padding:13px; border:1px dashed rgba(184,165,255,.3); border-radius:12px; color:#c7baff; background:transparent; font:12px "Vazirmatn",sans-serif; cursor:pointer; }
+@media (max-width:800px) { .coll-category-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:560px) { .coll-type-shortcuts { grid-template-columns:1fr; gap:8px; } .coll-type-tile { padding:12px; } .coll-category-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .coll-category-tile { min-height:78px; padding:11px; } }
