@@ -156,6 +156,9 @@ h1,h2,h3,p { margin-top:0; }
 .word-input-with-sound { display:flex; align-items:center; gap:8px; }
 .word-input-with-sound .field { min-width:0; }
 .word-input-with-sound .icon-btn { flex-shrink:0; width:42px; height:42px; color:#bcaeff; }
+.word-input-with-sound .save-word-top { color:#0b1714; background:linear-gradient(135deg,#8af0cf,#5bd8b3); border-color:transparent; box-shadow:0 5px 18px #5bd8b322; }
+.word-input-with-sound .save-word-top:hover { filter:brightness(1.08); transform:translateY(-1px); }
+@media (max-width:480px) { .word-input-with-sound { gap:5px; } .word-input-with-sound .icon-btn { width:36px; height:40px; } }
 .meaning-under-definition { display:flex; flex-direction:column; gap:4px; margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); }
 .meaning-under-definition strong { color:#bcaeff; font-size:11px; }
 .meaning-under-definition span { color:#e0e0e8; font-size:13px; line-height:1.9; }
