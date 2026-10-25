@@ -241,18 +241,31 @@ export default function Home() {
     }
   }
 
-  async function translateToPersian(text: string, timeoutMs = 4500): Promise<string> {
-    if (!text.trim()) return "";
+  async function translateToPersian(text: string, timeoutMs = 3200): Promise<string> {
+    const source = text.trim();
+    if (!source) return "";
+    const isUsable = (value: string) => !!value && value.toLowerCase() !== source.toLowerCase()
+      && !/please use|quota|rate limit|translation unavailable|error/i.test(value);
+    // Try MyMemory first, then Google Translate's public endpoint if it is unavailable or rate-limited.
     try {
       const data = await fetchJson<{ responseData?: { translatedText?: string }; responseStatus?: number }>(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en%7Cfa`,
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(source)}&langpair=en%7Cfa`,
         timeoutMs
       );
       const translated = String(data?.responseData?.translatedText ?? "").trim();
-      if (data.responseStatus && data.responseStatus !== 200) return "";
-      if (!translated || translated.toLowerCase().includes("please use") || translated.toLowerCase() === text.toLowerCase()) return "";
-      return translated;
-    } catch { return ""; }
+      if ((!data.responseStatus || data.responseStatus === 200) && isUsable(translated)) return translated;
+    } catch { /* Try the fallback provider. */ }
+    try {
+      const data = await fetchJson<unknown>(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fa&dt=t&q=${encodeURIComponent(source)}`,
+        Math.max(timeoutMs, 2600)
+      );
+      if (Array.isArray(data) && Array.isArray(data[0])) {
+        const translated = data[0].map((part) => Array.isArray(part) ? String(part[0] ?? "") : "").join("").trim();
+        if (isUsable(translated)) return translated;
+      }
+    } catch { /* Both public translation providers may be unavailable offline. */ }
+    return "";
   }
 
   function estimateLevel(word: string, definition: string): string {
@@ -318,17 +331,26 @@ export default function Home() {
         ...antonymData.map(item => item.word)
       ])].filter(Boolean).slice(0, 2);
 
-      // Fill every field immediately; translation of optional example/related words never blocks completion.
+      // Translate the headword, definition, example, synonyms and antonyms; each related word gets its own Persian meaning.
+      const definitionTranslationPromise = definition ? translateToPersian(definition, 4200) : Promise.resolve("");
+      const exampleTranslationPromise = dictionaryExample ? translateToPersian(dictionaryExample, 4200) : Promise.resolve("");
+      const translateRelated = async (items: string[]) => {
+        const pairs = await Promise.all(items.map(async word => ({ word, meaning: await translateToPersian(word, 3200) })));
+        return pairs.map(item => item.word + " — " + (item.meaning || "ترجمه در دسترس نیست")).join(" || ");
+      };
+      const [translatedDefinition, translatedExample, translatedSynonyms, translatedAntonyms] = await Promise.all([
+        definitionTranslationPromise, exampleTranslationPromise,
+        translateRelated(relatedSynonyms), translateRelated(relatedAntonyms)
+      ]);
       const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "Definition unavailable from the dictionary.");
       const finalExample = dictionaryExample || "I learned the word " + term + " while studying English.";
-      const relatedText = (items: string[]) => items.map(w => w + " — معنی نامشخص").join(" || ");
       const enrichedFields = {
-        meaning: translatedMeaning || form.meaning || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
+        meaning: translatedMeaning || (translatedDefinition ? translatedDefinition : form.meaning) || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
         definition: finalDefinition,
         example: finalExample,
-        exampleFa: form.exampleFa || "",
-        synonyms: relatedText(relatedSynonyms) || form.synonyms,
-        antonyms: relatedText(relatedAntonyms) || form.antonyms,
+        exampleFa: translatedExample || form.exampleFa || "",
+        synonyms: translatedSynonyms || form.synonyms,
+        antonyms: translatedAntonyms || form.antonyms,
         level: estimateLevel(term, definition || term),
         category: inferCategory(term, definition)
       };
@@ -343,12 +365,7 @@ export default function Home() {
       setEnrichMessage(hasRemoteData
         ? "تکمیل سریع انجام شد؛ اگر معنی نامشخص است، آن را بررسی کن."
         : "منابع آنلاین سریع پاسخ ندادند؛ فیلدهای جایگزین پر شدند. اتصال را بررسی کن.");
-      // Translate the example in the background without delaying the main autofill.
-      if (!form.exampleFa && dictionaryExample) {
-        void translateToPersian(dictionaryExample).then(translation => {
-          if (translation) setForm(current => current.word.trim().toLowerCase() === term.toLowerCase() ? { ...current, exampleFa: translation } : current);
-        });
-      }
+
     } catch {
       setEnrichMessage("تکمیل سریع انجام نشد؛ فیلدها را بررسی کن و دوباره امتحان کن.");
     } finally {
