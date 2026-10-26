@@ -867,7 +867,7 @@ export default function Home() {
                   </span>
                 </div>
                 <div className="quiz-options">
-                  {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice && option.id === quizWord.id ? "correct" : ""} ${quizChoice === option.id && option.id !== quizWord.id ? "wrong" : ""}`} onClick={() => answerQuiz(option.id)}>{quizMode === "reverse" || quizMode === "cloze" ? option.word : option.meaning}</button>)}
+                  {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice === option.id && quizChoice === quizWord.id ? "correct" : ""} ${quizChoice === option.id && quizChoice !== quizWord.id ? "wrong" : ""} ${quizChoice && option.id === quizWord.id && quizChoice !== quizWord.id ? "answer-key" : ""}`} onClick={() => answerQuiz(option.id)}>{quizMode === "reverse" || quizMode === "cloze" ? option.word : option.meaning}</button>)}
                 </div>
                 {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizWord.meaning}`}{quizWord.definition && <p style={{ margin: "8px 0 0", color: "#c7c8d6", lineHeight: 1.9 }}>{quizWord.definition}</p>}{quizWord.example && <p dir="ltr" style={{ textAlign: "left", margin: "8px 0 0", color: "#b8b9ca", lineHeight: 1.8 }}>{quizWord.example}</p>}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= quizTotal ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
               </>
