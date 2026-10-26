@@ -118,6 +118,8 @@ h1,h2,h3,p { margin-top:0; }
 .quiz-option:hover:not(:disabled) { border-color:#a78bfa77; }
 .quiz-option.correct { border-color:#6ee7c2; background:#6ee7c214; }
 .quiz-option.wrong { border-color:#fb7185; background:#fb718514; }
+.quiz-option.answer-key { border-color:#fbbf24; background:#fbbf2410; }
+.quiz-option.answer-key::after { content:"  · پاسخ صحیح"; color:#fbbf24; font-size:11px; }
 .notice { color:#a6e9d7; background:#6ee7c20d; border:1px solid #6ee7c21d; border-radius:12px; padding:11px 13px; font-size:12px; line-height:1.8; margin-top:15px; }
 @media (max-width:850px) {
   .hero { grid-template-columns:1fr; }
