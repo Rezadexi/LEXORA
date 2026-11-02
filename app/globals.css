@@ -584,3 +584,46 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .academy-cloze-feedback.is-correct { color:#8ce7c6; border:1px solid rgba(110,231,194,.25); background:rgba(110,231,194,.06); }
 .academy-cloze-feedback.is-wrong { color:#ffd08c; border:1px solid rgba(245,196,124,.25); background:rgba(245,196,124,.06); }
 @media (max-width:560px) { .academy-step-label { font-size:10px; } .academy-cloze { font-size:12px; } }
+
+.wordskills-page { padding-bottom:34px; }
+.wordskills-brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit; }
+.wordskills-hero { padding:clamp(22px,4vw,38px); margin-bottom:16px; background:radial-gradient(ellipse at 100% 0%,rgba(184,165,255,.13),transparent 55%),linear-gradient(145deg,rgba(21,23,35,.98),rgba(13,15,23,.98)); }
+.wordskills-hero h1 { margin:9px 0; font-size:clamp(28px,4vw,42px); }
+.wordskills-hero h1 span { color:#b8a5ff; }
+.wordskills-hero > p { max-width:760px; color:var(--muted); font-size:13px; line-height:2; }
+.wordskills-notice { padding:12px 14px; border:1px solid rgba(245,196,124,.22); background:rgba(245,196,124,.045); color:#e2cba1; border-radius:12px; font-size:11px; line-height:2; }
+.wordskills-stats { display:flex; gap:10px; flex-wrap:wrap; margin-top:17px; }
+.wordskills-stats > div { min-width:105px; display:flex; flex-direction:column; gap:4px; padding:11px 14px; border:1px solid var(--border); border-radius:12px; }
+.wordskills-stats strong { font:800 22px "DM Sans","Vazirmatn",sans-serif; color:#c7baff; }
+.wordskills-stats span { color:var(--muted); font-size:10px; }
+.wordskills-layout { display:grid; grid-template-columns:minmax(220px,.65fr) minmax(0,1.6fr); gap:15px; align-items:start; }
+.wordskills-lessons,.wordskills-list { padding:17px; min-width:0; }
+.wordskills-section-title { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:13px; }
+.wordskills-lesson-list { display:grid; gap:6px; max-height:680px; overflow:auto; }
+.wordskills-lesson { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 11px; border:1px solid transparent; border-radius:11px; color:var(--text); background:rgba(255,255,255,.018); text-align:right; cursor:pointer; }
+.wordskills-lesson > span:first-child { display:grid; gap:3px; }
+.wordskills-lesson strong { font-size:12px; }
+.wordskills-lesson small { color:var(--muted); font-size:10px; }
+.wordskills-lesson.active { border-color:rgba(184,165,255,.3); background:rgba(184,165,255,.08); }
+.wordskills-count { color:#c7baff; font:700 12px "DM Sans",sans-serif; }
+.wordskills-list-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.wordskills-list-head h2 { font-size:18px; margin:4px 0; }
+.wordskills-list-head p { color:var(--muted); font-size:11px; margin:0; line-height:1.8; }
+.wordskills-progress { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px; border:1px solid var(--border); border-radius:12px; color:#c7baff; font-weight:800; }
+.wordskills-progress small { color:var(--muted); font-weight:400; font-size:9px; }
+.wordskills-search { display:flex; align-items:center; gap:8px; margin-bottom:12px; color:var(--muted); }
+.wordskills-search .field { flex:1; min-width:0; }
+.wordskills-word-list { display:grid; gap:9px; }
+.wordskills-word { display:flex; align-items:center; justify-content:space-between; gap:13px; padding:14px; border:1px solid var(--border); border-radius:14px; background:rgba(255,255,255,.018); }
+.wordskills-word-main { min-width:0; flex:1; }
+.wordskills-word-heading { display:flex; align-items:center; justify-content:flex-start; gap:8px; flex-wrap:wrap; }
+.wordskills-word-heading h3 { margin:0; font:700 18px "DM Sans",Arial,sans-serif; color:#eeeaff; }
+.wordskills-word-heading .level { margin-right:0; }
+.wordskills-meaning { margin-top:5px; color:#d2c8ff; font-weight:700; font-size:13px; }
+.wordskills-example { margin:7px 0 0; color:#e0deed; text-align:left; font:12px/1.8 "DM Sans",Arial,sans-serif; overflow-wrap:anywhere; }
+.wordskills-example-fa { margin:4px 0 0; color:var(--muted); font-size:11px; line-height:1.8; }
+.wordskills-add,.wordskills-added { flex-shrink:0; justify-content:center; font-size:11px; }
+.wordskills-added { color:#8ce7c6; border-color:rgba(110,231,194,.2); background:rgba(110,231,194,.045); }
+.wordskills-add span,.wordskills-added span { display:flex; }
+@media(max-width:800px){.wordskills-layout{grid-template-columns:1fr}.wordskills-lesson-list{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}.wordskills-lessons{padding:13px}.wordskills-word{align-items:flex-start}}
+@media(max-width:560px){.wordskills-page .topbar{align-items:flex-start;flex-wrap:wrap}.wordskills-page .top-actions{width:100%}.wordskills-page .top-actions .btn{flex:1;justify-content:center;font-size:10px}.wordskills-lesson-list{grid-template-columns:1fr 1fr}.wordskills-list{padding:12px}.wordskills-word{flex-direction:column}.wordskills-add,.wordskills-added{width:100%}.wordskills-list-head h2{font-size:15px}.wordskills-progress{font-size:11px}}
