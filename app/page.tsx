@@ -604,6 +604,7 @@ export default function Home() {
         </div>
         <div className="top-actions">
           <a className="btn btn-small coll-nav-link" href="/LEXORA/collocations/"><Sparkles size={15}/> کالوکیشن و اصطلاحات</a>
+          <a className="btn btn-small wordskills-nav-link" href="/LEXORA/word-skills/"><BookOpen size={15}/> Word Skills</a>
           <button className="btn btn-small" onClick={exportWords}><ArrowDownLeft size={15}/> خروجی بانک</button>
           <button className="btn btn-small" onClick={() => document.getElementById("lexora-import-file")?.click()}><BookOpen size={15}/> ورود پشتیبان</button>
           <input id="lexora-import-file" type="file" accept="application/json,.json" onChange={importWords} style={{ display: "none" }} />
