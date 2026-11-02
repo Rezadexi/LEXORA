@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, BookOpen, Check, Plus, Search, Volume2, Layers3 } from "lucide-react";
 
 type LessonWord = { word: string; meaning: string; example: string; exampleFa: string; level: string };
@@ -162,7 +162,7 @@ export default function WordSkillsPage() {
   const [hydrated, setHydrated] = useState(false);
   const activeLesson = lessons.find(l => l.id === lessonId) ?? lessons[0];
 
-  useMemo(() => {
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
         const raw = localStorage.getItem(BANK_KEY);
