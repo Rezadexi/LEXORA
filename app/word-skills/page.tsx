@@ -6,148 +6,185 @@ import { ArrowRight, BookOpen, Check, Plus, Search, Volume2, Layers3 } from "luc
 
 type LessonWord = { word: string; meaning: string; example: string; exampleFa: string; level: string };
 const lessons: { id: number; title: string; topic: string; words: LessonWord[] }[] = [
-  { id: 1, title: "درس ۱", topic: "آدم‌ها و توصیف‌ها", words: [
-    {word:"friendly",meaning:"خوش‌برخورد، دوستانه",example:"Our new neighbor is very friendly.",exampleFa:"همسایهٔ جدید ما خیلی خوش‌برخورد است.",level:"A1"},
-    {word:"quiet",meaning:"ساکت، آرام",example:"It is a quiet place to study.",exampleFa:"این‌جا جای آرامی برای درس خواندن است.",level:"A1"},
-    {word:"polite",meaning:"مودب",example:"It is polite to say thank you.",exampleFa:"گفتنِ متشکرم نشانهٔ ادب است.",level:"A2"},
-    {word:"helpful",meaning:"کمک‌کننده، مفید",example:"The staff were helpful.",exampleFa:"کارکنان کمک‌کننده بودند.",level:"A2"},
-    {word:"careful",meaning:"مراقب، بادقت",example:"Be careful when you cross the road.",exampleFa:"هنگام عبور از خیابان مراقب باش.",level:"A2"},
-    {word:"busy",meaning:"مشغول، پرکار",example:"I am busy this afternoon.",exampleFa:"امروز بعدازظهر مشغولم.",level:"A1"},
-    {word:"honest",meaning:"صادق، راستگو",example:"She is always honest with her friends.",exampleFa:"او همیشه با دوستانش صادق است.",level:"A2"},
-    {word:"kind",meaning:"مهربان",example:"It was kind of you to help.",exampleFa:"کمک‌کردنت از مهربانی تو بود.",level:"A1"}
+  { id: 1, title: "درس 1", topic: "Classroom vocabulary — واژگان کلاس درس", words: [
+    {word:"whiteboard",meaning:"تخته وایت‌برد",example:"The teacher writes on the whiteboard.",exampleFa:"معلم روی تخته می‌نویسد.",level:"A1"},
+{word:"desk",meaning:"میز",example:"My desk is near the window.",exampleFa:"میزم کنار پنجره است.",level:"A1"},
+{word:"coursebook",meaning:"کتاب درسی",example:"Open your coursebook.",exampleFa:"کتاب درسی‌ات را باز کن.",level:"A1"},
+{word:"dictionary",meaning:"فرهنگ لغت",example:"Use a dictionary.",exampleFa:"از فرهنگ لغت استفاده کن.",level:"A1"}
   ]},
-  { id: 2, title: "درس ۲", topic: "زندگی روزمره", words: [
-    {word:"usually",meaning:"معمولاً",example:"I usually walk to school.",exampleFa:"من معمولاً پیاده به مدرسه می‌روم.",level:"A1"},
-    {word:"sometimes",meaning:"گاهی",example:"We sometimes eat out.",exampleFa:"ما گاهی بیرون غذا می‌خوریم.",level:"A1"},
-    {word:"early",meaning:"زود، زودهنگام",example:"She gets up early.",exampleFa:"او زود از خواب بیدار می‌شود.",level:"A1"},
-    {word:"late",meaning:"دیر، دیرهنگام",example:"Don't be late for class.",exampleFa:"برای کلاس دیر نکن.",level:"A1"},
-    {word:"prepare",meaning:"آماده‌کردن",example:"I prepare breakfast every morning.",exampleFa:"من هر صبح صبحانه آماده می‌کنم.",level:"A2"}
+  { id: 2, title: "درس 2", topic: "Grammar words — واژه‌های دستوری", words: [
+    {word:"noun",meaning:"اسم",example:"Teacher is a noun.",exampleFa:"Teacher اسم است.",level:"A2"},
+{word:"verb",meaning:"فعل",example:"Learn is a verb.",exampleFa:"Learn فعل است.",level:"A2"},
+{word:"adjective",meaning:"صفت",example:"Quiet is an adjective.",exampleFa:"Quiet صفت است.",level:"A2"},
+{word:"adverb",meaning:"قید",example:"Slowly is an adverb.",exampleFa:"Slowly قید است.",level:"A2"}
   ]},
-  { id: 3, title: "درس ۳", topic: "خانه و وسایل", words: [
-    {word:"comfortable",meaning:"راحت",example:"This chair is comfortable.",exampleFa:"این صندلی راحت است.",level:"A2"},
-    {word:"crowded",meaning:"شلوغ، پرازدحام",example:"The kitchen gets crowded at dinner time.",exampleFa:"آشپزخانه هنگام شام شلوغ می‌شود.",level:"A2"},
-    {word:"tidy",meaning:"مرتب",example:"Please keep your desk tidy.",exampleFa:"لطفاً میزت را مرتب نگه دار.",level:"A2"},
-    {word:"repair",meaning:"تعمیرکردن",example:"We need to repair the door.",exampleFa:"باید در را تعمیر کنیم.",level:"A2"},
-    {word:"borrow",meaning:"قرض‌گرفتن",example:"Can I borrow your pen?",exampleFa:"می‌توانم خودکارت را قرض بگیرم؟",level:"A2"}
+  { id: 3, title: "درس 3", topic: "Using this book — روش استفاده از کتاب", words: [
+    {word:"unit",meaning:"درس",example:"Read this unit first.",exampleFa:"اول این درس را بخوان.",level:"A1"},
+{word:"exercise",meaning:"تمرین",example:"Finish the exercise.",exampleFa:"تمرین را تمام کن.",level:"A1"},
+{word:"example",meaning:"مثال",example:"Read the example.",exampleFa:"مثال را بخوان.",level:"A1"},
+{word:"answer key",meaning:"پاسخ‌نامه",example:"Check the answer key.",exampleFa:"پاسخ‌نامه را بررسی کن.",level:"A2"}
   ]},
-  { id: 4, title: "درس ۴", topic: "غذا و خرید", words: [
-    {word:"fresh",meaning:"تازه",example:"We buy fresh fruit every week.",exampleFa:"ما هر هفته میوهٔ تازه می‌خریم.",level:"A1"},
-    {word:"choose",meaning:"انتخاب‌کردن",example:"Choose a seat near the window.",exampleFa:"صندلی‌ای نزدیک پنجره انتخاب کن.",level:"A1"},
-    {word:"price",meaning:"قیمت",example:"The price is reasonable.",exampleFa:"قیمت مناسب است.",level:"A1"},
-    {word:"cheap",meaning:"ارزان",example:"This shop sells cheap clothes.",exampleFa:"این مغازه لباس ارزان می‌فروشد.",level:"A1"},
-    {word:"expensive",meaning:"گران",example:"That restaurant is too expensive.",exampleFa:"آن رستوران بیش از حد گران است.",level:"A1"}
+  { id: 4, title: "درس 4", topic: "Learning new words — یادگیری واژه‌های جدید", words: [
+    {word:"meaning",meaning:"معنی",example:"What is the meaning of this word?",exampleFa:"معنی این کلمه چیست؟",level:"A1"},
+{word:"pronunciation",meaning:"تلفظ",example:"Listen to the pronunciation.",exampleFa:"به تلفظ گوش بده.",level:"A2"},
+{word:"spell",meaning:"هجی کردن",example:"Can you spell your name?",exampleFa:"می‌توانی اسمت را هجی کنی؟",level:"A1"},
+{word:"review",meaning:"مرور کردن",example:"Review the words daily.",exampleFa:"هر روز واژه‌ها را مرور کن.",level:"A2"}
   ]},
-  { id: 5, title: "درس ۵", topic: "سفر و رفت‌وآمد", words: [
-    {word:"journey",meaning:"سفر، مسیر",example:"The journey takes two hours.",exampleFa:"سفر دو ساعت طول می‌کشد.",level:"A2"},
-    {word:"arrive",meaning:"رسیدن",example:"We arrive at noon.",exampleFa:"ما ظهر می‌رسیم.",level:"A1"},
-    {word:"ticket",meaning:"بلیط",example:"I bought a train ticket.",exampleFa:"من بلیط قطار خریدم.",level:"A1"},
-    {word:"miss",meaning:"از دست دادن؛ جا ماندن از",example:"Don't miss the bus.",exampleFa:"از اتوبوس جا نمان.",level:"A2"},
-    {word:"abroad",meaning:"در خارج از کشور",example:"She wants to study abroad.",exampleFa:"او می‌خواهد در خارج از کشور تحصیل کند.",level:"A2"}
+  { id: 5, title: "درس 5", topic: "Classroom activities — فعالیت‌های کلاسی", words: [
+    {word:"repeat",meaning:"تکرار کردن",example:"Repeat after me.",exampleFa:"بعد از من تکرار کن.",level:"A1"},
+{word:"compare",meaning:"مقایسه کردن",example:"Compare your answers.",exampleFa:"پاسخ‌هایت را مقایسه کن.",level:"A2"},
+{word:"guess",meaning:"حدس زدن",example:"Guess the meaning.",exampleFa:"معنی را حدس بزن.",level:"A1"},
+{word:"instructions",meaning:"دستورالعمل‌ها",example:"Read the instructions.",exampleFa:"دستورالعمل‌ها را بخوان.",level:"A2"}
   ]},
-  { id: 6, title: "درس ۶", topic: "تحصیل و کار", words: [
-    {word:"improve",meaning:"بهترکردن، پیشرفت‌کردن",example:"I want to improve my English.",exampleFa:"می‌خواهم انگلیسی‌ام را بهتر کنم.",level:"A2"},
-    {word:"explain",meaning:"توضیح‌دادن",example:"Could you explain this word?",exampleFa:"می‌توانی این کلمه را توضیح بدهی؟",level:"A2"},
-    {word:"practice",meaning:"تمرین‌کردن؛ تمرین",example:"You need to practice every day.",exampleFa:"باید هر روز تمرین کنی.",level:"A1"},
-    {word:"mistake",meaning:"اشتباه",example:"Everyone makes mistakes.",exampleFa:"همه اشتباه می‌کنند.",level:"A1"},
-    {word:"skill",meaning:"مهارت",example:"Writing is an important skill.",exampleFa:"نوشتن مهارت مهمی است.",level:"A2"}
+  { id: 6, title: "درس 6", topic: "Numbers — اعداد", words: [
+    {word:"zero",meaning:"صفر",example:"The answer is zero.",exampleFa:"پاسخ صفر است.",level:"A1"},
+{word:"hundred",meaning:"صد",example:"There are a hundred pages.",exampleFa:"صد صفحه وجود دارد.",level:"A1"},
+{word:"thousand",meaning:"هزار",example:"A thousand people live here.",exampleFa:"هزار نفر اینجا زندگی می‌کنند.",level:"A1"},
+{word:"half",meaning:"نصف",example:"I ate half the cake.",exampleFa:"نصف کیک را خوردم.",level:"A1"}
   ]},
-  { id: 7, title: "درس ۷", topic: "احساسات و نظرها", words: [
-    {word:"excited",meaning:"هیجان‌زده",example:"I'm excited about the trip.",exampleFa:"برای سفر هیجان‌زده‌ام.",level:"A2"},
-    {word:"worried",meaning:"نگران",example:"She is worried about the exam.",exampleFa:"او نگران امتحان است.",level:"A2"},
-    {word:"surprised",meaning:"متعجب، غافلگیرشده",example:"We were surprised by the news.",exampleFa:"از خبر غافلگیر شدیم.",level:"A2"},
-    {word:"prefer",meaning:"ترجیح‌دادن",example:"I prefer tea to coffee.",exampleFa:"چای را به قهوه ترجیح می‌دهم.",level:"A2"},
-    {word:"agree",meaning:"موافق‌بودن",example:"I agree with your idea.",exampleFa:"با ایده‌ات موافقم.",level:"A2"}
+  { id: 7, title: "درس 7", topic: "Telling the time — گفتن ساعت", words: [
+    {word:"o’clock",meaning:"ساعت دقیق",example:"It’s three o’clock.",exampleFa:"ساعت سه است.",level:"A1"},
+{word:"quarter past",meaning:"یک ربع گذشته",example:"It’s quarter past six.",exampleFa:"شش و ربع است.",level:"A1"},
+{word:"half past",meaning:"نیم ساعت گذشته",example:"It’s half past eight.",exampleFa:"هشت و نیم است.",level:"A1"},
+{word:"noon",meaning:"ظهر",example:"We eat at noon.",exampleFa:"ظهر غذا می‌خوریم.",level:"A1"}
   ]},
-  { id: 8, title: "درس ۸", topic: "سلامت و بدن", words: [
-    {word:"healthy",meaning:"سالم، سلامت",example:"A healthy diet is important.",exampleFa:"رژیم غذایی سالم مهم است.",level:"A2"},
-    {word:"ill",meaning:"بیمار",example:"He was ill last week.",exampleFa:"او هفتهٔ پیش بیمار بود.",level:"A1"},
-    {word:"recover",meaning:"بهبود یافتن",example:"It took her a week to recover.",exampleFa:"یک هفته طول کشید تا بهبود یابد.",level:"B1"},
-    {word:"pain",meaning:"درد",example:"I have a pain in my back.",exampleFa:"پشتم درد می‌کند.",level:"A2"},
-    {word:"exercise",meaning:"ورزش؛ ورزش‌کردن",example:"Regular exercise helps you feel better.",exampleFa:"ورزش منظم به بهترشدن حال کمک می‌کند.",level:"A2"}
+  { id: 8, title: "درس 8", topic: "Days, seasons and dates — روزها، فصل‌ها و تاریخ‌ها", words: [
+    {word:"weekday",meaning:"روز کاری",example:"Monday is a weekday.",exampleFa:"دوشنبه روز کاری است.",level:"A1"},
+{word:"weekend",meaning:"آخر هفته",example:"I rest at the weekend.",exampleFa:"آخر هفته استراحت می‌کنم.",level:"A1"},
+{word:"spring",meaning:"بهار",example:"Flowers grow in spring.",exampleFa:"گل‌ها در بهار رشد می‌کنند.",level:"A1"},
+{word:"date",meaning:"تاریخ",example:"What is today’s date?",exampleFa:"امروز چندم است؟",level:"A1"}
   ]},
-  { id: 9, title: "درس ۹", topic: "طبیعت و آب‌وهوا", words: [
-    {word:"weather",meaning:"آب‌وهوا",example:"The weather is warm today.",exampleFa:"امروز هوا گرم است.",level:"A1"},
-    {word:"cloudy",meaning:"ابری",example:"It may be cloudy tomorrow.",exampleFa:"ممکن است فردا هوا ابری باشد.",level:"A1"},
-    {word:"field",meaning:"مزرعه؛ زمین",example:"The children played in the field.",exampleFa:"بچه‌ها در زمین بازی کردند.",level:"A2"},
-    {word:"protect",meaning:"محافظت‌کردن",example:"We should protect nature.",exampleFa:"باید از طبیعت محافظت کنیم.",level:"A2"},
-    {word:"dangerous",meaning:"خطرناک",example:"The road is dangerous at night.",exampleFa:"جاده شب‌ها خطرناک است.",level:"A2"}
+  { id: 9, title: "درس 9", topic: "Time words and phrases — واژه‌ها و عبارت‌های زمان", words: [
+    {word:"yesterday",meaning:"دیروز",example:"I called yesterday.",exampleFa:"دیروز تماس گرفتم.",level:"A1"},
+{word:"tomorrow",meaning:"فردا",example:"We leave tomorrow.",exampleFa:"فردا می‌رویم.",level:"A1"},
+{word:"ago",meaning:"پیش",example:"I came here a year ago.",exampleFa:"یک سال پیش به اینجا آمدم.",level:"A1"},
+{word:"recently",meaning:"اخیراً",example:"I recently moved.",exampleFa:"اخیراً نقل مکان کردم.",level:"A2"}
   ]},
-  { id: 10, title: "درس ۱۰", topic: "زمان و برنامه‌ها", words: [
-    {word:"appointment",meaning:"قرار ملاقات",example:"I have a doctor's appointment.",exampleFa:"با پزشک قرار ملاقات دارم.",level:"A2"},
-    {word:"schedule",meaning:"برنامهٔ زمانی",example:"My schedule is full today.",exampleFa:"برنامهٔ امروز من پر است.",level:"A2"},
-    {word:"cancel",meaning:"لغوکردن",example:"They had to cancel the meeting.",exampleFa:"آن‌ها مجبور شدند جلسه را لغو کنند.",level:"A2"},
-    {word:"available",meaning:"در دسترس؛ آزاد",example:"Are you available this evening?",exampleFa:"امشب وقت داری؟",level:"A2"},
-    {word:"recently",meaning:"اخیراً",example:"I recently started a new course.",exampleFa:"من اخیراً دورهٔ جدیدی را شروع کردم.",level:"B1"}
+  { id: 10, title: "درس 10", topic: "Parts of the body — اعضای بدن", words: [
+    {word:"shoulder",meaning:"شانه",example:"My bag is on my shoulder.",exampleFa:"کیفم روی شانه‌ام است.",level:"A1"},
+{word:"elbow",meaning:"آرنج",example:"He hurt his elbow.",exampleFa:"آرنجش آسیب دید.",level:"A2"},
+{word:"knee",meaning:"زانو",example:"My knee hurts.",exampleFa:"زانوم درد می‌کند.",level:"A1"},
+{word:"thumb",meaning:"شست",example:"She raised her thumb.",exampleFa:"او شستش را بالا برد.",level:"A2"}
   ]},
-  { id: 11, title: "درس ۱۱", topic: "شهر و مکان‌ها", words: [
-    {word:"neighborhood",meaning:"محله",example:"This is a safe neighborhood.",exampleFa:"این محله امن است.",level:"A2"},
-    {word:"opposite",meaning:"روبروی؛ مخالف",example:"The bank is opposite the station.",exampleFa:"بانک روبروی ایستگاه است.",level:"A2"},
-    {word:"nearby",meaning:"نزدیک، در نزدیکی",example:"Is there a pharmacy nearby?",exampleFa:"داروخانه‌ای در نزدیکی هست؟",level:"A2"},
-    {word:"entrance",meaning:"ورودی",example:"Wait for me at the entrance.",exampleFa:"جلوی ورودی منتظرم بمان.",level:"A2"},
-    {word:"direction",meaning:"جهت؛ مسیر",example:"Could you give me directions?",exampleFa:"می‌توانی مسیر را به من بگویی؟",level:"A2"}
+  { id: 11, title: "درس 11", topic: "Describing people — توصیف افراد", words: [
+    {word:"tall",meaning:"قدبلند",example:"My brother is tall.",exampleFa:"برادرم قدبلند است.",level:"A1"},
+{word:"curly",meaning:"فرفری",example:"She has curly hair.",exampleFa:"او موهای فرفری دارد.",level:"A1"},
+{word:"bald",meaning:"طاس",example:"The man is bald.",exampleFa:"آن مرد طاس است.",level:"A2"},
+{word:"middle-aged",meaning:"میانسال",example:"A middle-aged man arrived.",exampleFa:"مردی میانسال رسید.",level:"B1"}
   ]},
-  { id: 12, title: "درس ۱۲", topic: "ارتباطات", words: [
-    {word:"message",meaning:"پیام",example:"I left you a message.",exampleFa:"برای تو پیامی گذاشتم.",level:"A1"},
-    {word:"reply",meaning:"پاسخ‌دادن؛ پاسخ",example:"Please reply to my email.",exampleFa:"لطفاً به ایمیلم پاسخ بده.",level:"A2"},
-    {word:"invite",meaning:"دعوت‌کردن",example:"They invited us to dinner.",exampleFa:"آن‌ها ما را به شام دعوت کردند.",level:"A2"},
-    {word:"conversation",meaning:"گفت‌وگو",example:"We had a long conversation.",exampleFa:"گفت‌وگوی طولانی‌ای داشتیم.",level:"A2"},
-    {word:"mean",meaning:"منظور داشتن؛ معنی دادن",example:"What does this word mean?",exampleFa:"این کلمه چه معنی‌ای دارد؟",level:"A1"}
+  { id: 12, title: "درس 12", topic: "Physical actions — حرکات بدنی", words: [
+    {word:"bend",meaning:"خم کردن",example:"Bend your knees.",exampleFa:"زانوهایت را خم کن.",level:"A2"},
+{word:"shake",meaning:"تکان دادن",example:"Shake the bottle.",exampleFa:"بطری را تکان بده.",level:"A2"},
+{word:"stretch",meaning:"کش دادن",example:"Stretch your arms.",exampleFa:"دست‌هایت را بکش.",level:"A2"},
+{word:"point",meaning:"اشاره کردن",example:"Point at the map.",exampleFa:"به نقشه اشاره کن.",level:"A1"}
   ]},
-  { id: 13, title: "درس ۱۳", topic: "پول و امور روزانه", words: [
-    {word:"save",meaning:"پس‌اندازکردن؛ نجات‌دادن",example:"I'm saving money for a laptop.",exampleFa:"برای خرید لپ‌تاپ پول پس‌انداز می‌کنم.",level:"A2"},
-    {word:"spend",meaning:"خرج‌کردن؛ گذراندن",example:"Don't spend all your money.",exampleFa:"همهٔ پولت را خرج نکن.",level:"A2"},
-    {word:"cost",meaning:"هزینه داشتن؛ هزینه",example:"How much does it cost?",exampleFa:"قیمتش چقدر است؟",level:"A1"},
-    {word:"lend",meaning:"قرض‌دادن",example:"Can you lend me a book?",exampleFa:"می‌توانی کتابی به من قرض بدهی؟",level:"A2"},
-    {word:"afford",meaning:"از عهدهٔ هزینه برآمدن",example:"I can't afford a new phone.",exampleFa:"از عهدهٔ هزینهٔ گوشی جدید برنمی‌آیم.",level:"B1"}
+  { id: 13, title: "درس 13", topic: "Personal information — اطلاعات شخصی", words: [
+    {word:"surname",meaning:"نام خانوادگی",example:"Write your surname here.",exampleFa:"نام خانوادگی‌ات را اینجا بنویس.",level:"A1"},
+{word:"address",meaning:"نشانی",example:"What is your address?",exampleFa:"نشانی‌ات چیست؟",level:"A1"},
+{word:"nationality",meaning:"ملیت",example:"What is your nationality?",exampleFa:"ملیتت چیست؟",level:"A2"},
+{word:"date of birth",meaning:"تاریخ تولد",example:"Enter your date of birth.",exampleFa:"تاریخ تولدت را وارد کن.",level:"A2"}
   ]},
-  { id: 14, title: "درس ۱۴", topic: "تجربه و خاطره", words: [
-    {word:"remember",meaning:"به یادآوردن",example:"I remember her name.",exampleFa:"اسمش را به یاد دارم.",level:"A1"},
-    {word:"forget",meaning:"فراموش‌کردن",example:"Don't forget your keys.",exampleFa:"کلیدهایت را فراموش نکن.",level:"A1"},
-    {word:"experience",meaning:"تجربه",example:"It was a great experience.",exampleFa:"تجربهٔ فوق‌العاده‌ای بود.",level:"A2"},
-    {word:"happen",meaning:"اتفاق‌افتادن",example:"What happened yesterday?",exampleFa:"دیروز چه اتفاقی افتاد؟",level:"A1"},
-    {word:"perhaps",meaning:"شاید",example:"Perhaps we can meet tomorrow.",exampleFa:"شاید فردا بتوانیم همدیگر را ببینیم.",level:"A2"}
+  { id: 14, title: "درس 14", topic: "Family — خانواده", words: [
+    {word:"relative",meaning:"خویشاوند",example:"A relative is visiting us.",exampleFa:"خویشاوندی به دیدنمان می‌آید.",level:"A2"},
+{word:"cousin",meaning:"پسرعمو/دخترعمو و مانند آن",example:"My cousin lives nearby.",exampleFa:"خویشاوندم همین نزدیکی زندگی می‌کند.",level:"A1"},
+{word:"nephew",meaning:"خواهرزاده/برادرزادهٔ پسر",example:"My nephew starts school.",exampleFa:"خواهرزاده‌ام مدرسه را شروع می‌کند.",level:"B1"},
+{word:"niece",meaning:"خواهرزاده/برادرزادهٔ دختر",example:"My niece likes drawing.",exampleFa:"خواهرزاده‌ام نقاشی را دوست دارد.",level:"B1"}
   ]},
-  { id: 15, title: "درس ۱۵", topic: "توصیف و مقایسه", words: [
-    {word:"similar",meaning:"مشابه، شبیه",example:"The two pictures are similar.",exampleFa:"این دو تصویر شبیه هم هستند.",level:"A2"},
-    {word:"different",meaning:"متفاوت",example:"My opinion is different.",exampleFa:"نظر من متفاوت است.",level:"A1"},
-    {word:"instead",meaning:"در عوض",example:"Let's walk instead of driving.",exampleFa:"به‌جای رانندگی پیاده برویم.",level:"A2"},
-    {word:"especially",meaning:"به‌ویژه، مخصوصاً",example:"I enjoy reading, especially novels.",exampleFa:"از مطالعه، به‌ویژه رمان، لذت می‌برم.",level:"A2"},
-    {word:"quite",meaning:"نسبتاً؛ کاملاً",example:"The test was quite easy.",exampleFa:"آزمون نسبتاً آسان بود.",level:"A2"}
+  { id: 15, title: "درس 15", topic: "Personality — شخصیت", words: [
+    {word:"patient",meaning:"صبور",example:"Our teacher is patient.",exampleFa:"معلم ما صبور است.",level:"A2"},
+{word:"generous",meaning:"بخشنده",example:"She is very generous.",exampleFa:"او بسیار بخشنده است.",level:"B1"},
+{word:"reliable",meaning:"قابل‌اعتماد",example:"He is a reliable friend.",exampleFa:"او دوست قابل‌اعتمادی است.",level:"B1"},
+{word:"selfish",meaning:"خودخواه",example:"That was selfish.",exampleFa:"آن کار خودخواهانه بود.",level:"B1"}
   ]},
-  { id: 16, title: "درس ۱۶", topic: "طبیعت و محیط زیست", words: [
-    {word:"waste",meaning:"هدر دادن؛ زباله",example:"Don't waste water.",exampleFa:"آب را هدر نده.",level:"A2"},
-    {word:"reduce",meaning:"کاهش‌دادن",example:"We should reduce plastic use.",exampleFa:"باید مصرف پلاستیک را کاهش دهیم.",level:"A2"},
-    {word:"reuse",meaning:"دوباره استفاده‌کردن",example:"You can reuse this bag.",exampleFa:"می‌توانی دوباره از این کیسه استفاده کنی.",level:"A2"},
-    {word:"pollution",meaning:"آلودگی",example:"Air pollution is a serious problem.",exampleFa:"آلودگی هوا مشکل جدی‌ای است.",level:"A2"},
-    {word:"environment",meaning:"محیط زیست؛ محیط",example:"We must care for the environment.",exampleFa:"باید مراقب محیط زیست باشیم.",level:"A2"}
+  { id: 16, title: "درس 16", topic: "Relationships — روابط", words: [
+    {word:"get on with",meaning:"رابطهٔ خوبی داشتن با",example:"I get on with my colleagues.",exampleFa:"با همکارانم رابطهٔ خوبی دارم.",level:"B1"},
+{word:"argue",meaning:"بحث کردن",example:"They argue sometimes.",exampleFa:"آن‌ها گاهی بحث می‌کنند.",level:"A2"},
+{word:"trust",meaning:"اعتماد کردن",example:"Friends trust each other.",exampleFa:"دوستان به هم اعتماد دارند.",level:"A2"},
+{word:"introduce",meaning:"معرفی کردن",example:"Let me introduce my sister.",exampleFa:"اجازه بده خواهرم را معرفی کنم.",level:"A1"}
   ]},
-  { id: 17, title: "درس ۱۷", topic: "ویژگی‌های شخصیتی", words: [
-    {word:"patient",meaning:"صبور",example:"Be patient with yourself.",exampleFa:"با خودت صبور باش.",level:"A2"},
-    {word:"confident",meaning:"بااعتمادبه‌نفس",example:"She feels confident before the interview.",exampleFa:"او پیش از مصاحبه اعتمادبه‌نفس دارد.",level:"B1"},
-    {word:"generous",meaning:"بخشنده، دست‌ودل‌باز",example:"He is generous with his time.",exampleFa:"او در وقت‌گذاشتن برای دیگران دست‌ودل‌باز است.",level:"B1"},
-    {word:"lazy",meaning:"تنبل",example:"I feel lazy on rainy days.",exampleFa:"روزهای بارانی احساس تنبلی می‌کنم.",level:"A2"},
-    {word:"reliable",meaning:"قابل‌اعتماد",example:"She is a reliable friend.",exampleFa:"او دوست قابل‌اعتمادی است.",level:"B1"}
+  { id: 17, title: "درس 17", topic: "Feelings — احساسات", words: [
+    {word:"upset",meaning:"ناراحت",example:"He was upset about the result.",exampleFa:"از نتیجه ناراحت بود.",level:"A2"},
+{word:"nervous",meaning:"مضطرب",example:"I feel nervous before exams.",exampleFa:"قبل از امتحان مضطرب می‌شوم.",level:"A2"},
+{word:"delighted",meaning:"بسیار خوشحال",example:"We were delighted.",exampleFa:"بسیار خوشحال شدیم.",level:"B1"},
+{word:"lonely",meaning:"تنها و دلگیر",example:"He felt lonely.",exampleFa:"او احساس تنهایی کرد.",level:"A2"}
   ]},
-  { id: 18, title: "درس ۱۸", topic: "رویدادها و تصمیم‌ها", words: [
-    {word:"decide",meaning:"تصمیم‌گرفتن",example:"We decided to stay home.",exampleFa:"تصمیم گرفتیم در خانه بمانیم.",level:"A2"},
-    {word:"plan",meaning:"برنامه‌ریزی‌کردن؛ برنامه",example:"I plan to study tonight.",exampleFa:"برنامه دارم امشب درس بخوانم.",level:"A1"},
-    {word:"hope",meaning:"امیدواربودن؛ امید",example:"I hope you feel better soon.",exampleFa:"امیدوارم زودتر حالت بهتر شود.",level:"A1"},
-    {word:"expect",meaning:"انتظارداشتن",example:"I expect the bus to arrive soon.",exampleFa:"انتظار دارم اتوبوس به‌زودی برسد.",level:"A2"},
-    {word:"offer",meaning:"پیشنهاددادن؛ پیشنهاد",example:"They offered me a job.",exampleFa:"آن‌ها به من کاری پیشنهاد دادند.",level:"A2"}
+  { id: 18, title: "درس 18", topic: "Prepositions: time — حروف اضافهٔ زمان", words: [
+    {word:"at night",meaning:"شب‌ها",example:"I read at night.",exampleFa:"شب‌ها مطالعه می‌کنم.",level:"A1"},
+{word:"on Monday",meaning:"روز دوشنبه",example:"The class is on Monday.",exampleFa:"کلاس دوشنبه است.",level:"A1"},
+{word:"in July",meaning:"در ماه ژوئیه",example:"We travel in July.",exampleFa:"در ژوئیه سفر می‌کنیم.",level:"A1"},
+{word:"since",meaning:"از زمانی تا حال",example:"I have lived here since 2020.",exampleFa:"از ۲۰۲۰ اینجا زندگی کرده‌ام.",level:"B1"}
   ]},
-  { id: 19, title: "درس ۱۹", topic: "رسانه و سرگرمی", words: [
-    {word:"episode",meaning:"قسمت (سریال)",example:"I watched the last episode.",exampleFa:"آخرین قسمت را تماشا کردم.",level:"A2"},
-    {word:"audience",meaning:"تماشاگران؛ مخاطبان",example:"The audience enjoyed the show.",exampleFa:"تماشاگران از نمایش لذت بردند.",level:"B1"},
-    {word:"boring",meaning:"خسته‌کننده",example:"The film was boring.",exampleFa:"فیلم خسته‌کننده بود.",level:"A1"},
-    {word:"exciting",meaning:"هیجان‌انگیز",example:"It was an exciting match.",exampleFa:"مسابقهٔ هیجان‌انگیزی بود.",level:"A2"},
-    {word:"recommend",meaning:"توصیه‌کردن",example:"Can you recommend a good book?",exampleFa:"می‌توانی کتاب خوبی پیشنهاد کنی؟",level:"A2"}
+  { id: 19, title: "درس 19", topic: "Prepositions: direction — حروف اضافهٔ جهت", words: [
+    {word:"across",meaning:"از عرض",example:"Walk across the bridge.",exampleFa:"از پل عبور کن.",level:"A2"},
+{word:"through",meaning:"از میان",example:"The path goes through the forest.",exampleFa:"مسیر از جنگل می‌گذرد.",level:"A2"},
+{word:"towards",meaning:"به سمت",example:"Walk towards the door.",exampleFa:"به سمت در برو.",level:"A2"},
+{word:"along",meaning:"در امتداد",example:"We walked along the river.",exampleFa:"در امتداد رودخانه راه رفتیم.",level:"A2"}
   ]},
-  { id: 20, title: "درس ۲۰", topic: "هدف‌ها و پیشرفت", words: [
-    {word:"goal",meaning:"هدف",example:"My goal is to speak English well.",exampleFa:"هدفم این است که انگلیسی را خوب صحبت کنم.",level:"A2"},
-    {word:"achieve",meaning:"دستیابی به؛ به‌دست‌آوردن",example:"You can achieve your goals with practice.",exampleFa:"با تمرین می‌توانی به هدف‌هایت برسی.",level:"B1"},
-    {word:"progress",meaning:"پیشرفت",example:"I can see real progress.",exampleFa:"می‌توانم پیشرفت واقعی را ببینم.",level:"A2"},
-    {word:"continue",meaning:"ادامه‌دادن",example:"Continue learning a little every day.",exampleFa:"هر روز کمی به یادگیری ادامه بده.",level:"A2"},
-    {word:"success",meaning:"موفقیت",example:"Success takes time and effort.",exampleFa:"موفقیت به زمان و تلاش نیاز دارد.",level:"A2"}
+  { id: 20, title: "درس 20", topic: "Prepositions: place — حروف اضافهٔ مکان", words: [
+    {word:"above",meaning:"بالای",example:"The lamp is above the table.",exampleFa:"چراغ بالای میز است.",level:"A2"},
+{word:"below",meaning:"پایین‌تر از",example:"It is below zero.",exampleFa:"زیر صفر است.",level:"A2"},
+{word:"between",meaning:"بین",example:"It is between the shops.",exampleFa:"بین مغازه‌هاست.",level:"A1"},
+{word:"opposite",meaning:"روبروی",example:"The hotel is opposite the station.",exampleFa:"هتل روبروی ایستگاه است.",level:"A2"}
+  ]},
+  { id: 21, title: "درس 21", topic: "Prepositions: phrases — عبارت‌های حرف اضافه‌ای", words: [
+    {word:"in a hurry",meaning:"با عجله",example:"I left in a hurry.",exampleFa:"با عجله رفتم.",level:"A2"},
+{word:"on time",meaning:"به‌موقع",example:"The train arrived on time.",exampleFa:"قطار به‌موقع رسید.",level:"A2"},
+{word:"by mistake",meaning:"اشتباهی",example:"I sent it by mistake.",exampleFa:"آن را اشتباهی فرستادم.",level:"A2"},
+{word:"at first",meaning:"در ابتدا",example:"At first it was difficult.",exampleFa:"در ابتدا سخت بود.",level:"A2"}
+  ]},
+  { id: 22, title: "درس 22", topic: "Word + preposition — کلمه به‌همراه حرف اضافه", words: [
+    {word:"interested in",meaning:"علاقه‌مند به",example:"I am interested in science.",exampleFa:"به علم علاقه‌مندم.",level:"A2"},
+{word:"good at",meaning:"در چیزی خوب بودن",example:"She is good at languages.",exampleFa:"او در زبان‌ها خوب است.",level:"A2"},
+{word:"afraid of",meaning:"ترسیدن از",example:"He is afraid of spiders.",exampleFa:"او از عنکبوت می‌ترسد.",level:"A2"},
+{word:"depend on",meaning:"بستگی داشتن به",example:"It depends on the weather.",exampleFa:"به آب‌وهوا بستگی دارد.",level:"B1"}
+  ]},
+  { id: 23, title: "درس 23", topic: "Routines — کارهای روزمره", words: [
+    {word:"get up",meaning:"از خواب بلند شدن",example:"I get up at seven.",exampleFa:"ساعت هفت بیدار می‌شوم.",level:"A1"},
+{word:"get dressed",meaning:"لباس پوشیدن",example:"He gets dressed quickly.",exampleFa:"او سریع لباس می‌پوشد.",level:"A1"},
+{word:"commute",meaning:"رفت‌وآمد روزانه",example:"She commutes by train.",exampleFa:"او با قطار رفت‌وآمد می‌کند.",level:"B1"},
+{word:"go to bed",meaning:"به رختخواب رفتن",example:"I go to bed early.",exampleFa:"زود به رختخواب می‌روم.",level:"A1"}
+  ]},
+  { id: 24, title: "درس 24", topic: "Clothes — لباس‌ها", words: [
+    {word:"trousers",meaning:"شلوار",example:"These trousers are long.",exampleFa:"این شلوار بلند است.",level:"A1"},
+{word:"skirt",meaning:"دامن",example:"She wore a skirt.",exampleFa:"او دامن پوشید.",level:"A1"},
+{word:"sleeve",meaning:"آستین",example:"The sleeves are short.",exampleFa:"آستین‌ها کوتاه‌اند.",level:"A2"},
+{word:"fit",meaning:"اندازه بودن",example:"These shoes fit me.",exampleFa:"این کفش‌ها اندازه‌ام هستند.",level:"A2"}
+  ]},
+  { id: 25, title: "درس 25", topic: "Accessories — اکسسوری‌ها", words: [
+    {word:"belt",meaning:"کمربند",example:"He needs a belt.",exampleFa:"او کمربند لازم دارد.",level:"A1"},
+{word:"wallet",meaning:"کیف پول",example:"My wallet is in my bag.",exampleFa:"کیف پولم در کیفم است.",level:"A2"},
+{word:"necklace",meaning:"گردنبند",example:"The necklace is a gift.",exampleFa:"گردنبند هدیه است.",level:"A2"},
+{word:"gloves",meaning:"دستکش",example:"Wear gloves in winter.",exampleFa:"زمستان دستکش بپوش.",level:"A1"}
+  ]},
+  { id: 26, title: "درس 26", topic: "Colours, size and appearance — رنگ، اندازه و ظاهر", words: [
+    {word:"striped",meaning:"راه‌راه",example:"He has a striped shirt.",exampleFa:"او پیراهن راه‌راه دارد.",level:"A2"},
+{word:"plain",meaning:"ساده و بدون طرح",example:"I prefer a plain T-shirt.",exampleFa:"تی‌شرت ساده را ترجیح می‌دهم.",level:"A2"},
+{word:"loose",meaning:"گشاد",example:"This jacket is loose.",exampleFa:"این کت گشاد است.",level:"A2"},
+{word:"tight",meaning:"تنگ",example:"These shoes are tight.",exampleFa:"این کفش‌ها تنگ‌اند.",level:"A2"}
+  ]},
+  { id: 27, title: "درس 27", topic: "Money — پول", words: [
+    {word:"cash",meaning:"پول نقد",example:"Can I pay in cash?",exampleFa:"می‌توانم نقدی پرداخت کنم؟",level:"A1"},
+{word:"change",meaning:"باقی‌پول",example:"Here is your change.",exampleFa:"این هم باقی‌پولت.",level:"A1"},
+{word:"coin",meaning:"سکه",example:"I found a coin.",exampleFa:"یک سکه پیدا کردم.",level:"A1"},
+{word:"afford",meaning:"از عهدهٔ هزینه برآمدن",example:"I can't afford it.",exampleFa:"از عهدهٔ هزینه‌اش برنمی‌آیم.",level:"B1"}
+  ]},
+  { id: 28, title: "درس 28", topic: "Shopping — خرید کردن", words: [
+    {word:"receipt",meaning:"رسید",example:"Keep the receipt.",exampleFa:"رسید را نگه دار.",level:"A2"},
+{word:"refund",meaning:"پس گرفتن پول",example:"Can I get a refund?",exampleFa:"می‌توانم پولم را پس بگیرم؟",level:"B1"},
+{word:"discount",meaning:"تخفیف",example:"There is a discount today.",exampleFa:"امروز تخفیف وجود دارد.",level:"A2"},
+{word:"try on",meaning:"پرو کردن",example:"Can I try on this coat?",exampleFa:"می‌توانم این پالتو را پرو کنم؟",level:"A2"}
+  ]},
+  { id: 29, title: "درس 29", topic: "Possessions — وسایل و دارایی‌ها", words: [
+    {word:"belong to",meaning:"متعلق بودن به",example:"This bag belongs to me.",exampleFa:"این کیف متعلق به من است.",level:"A2"},
+{word:"own",meaning:"مالک بودن",example:"They own a small house.",exampleFa:"آن‌ها خانه‌ای کوچک دارند.",level:"A2"},
+{word:"valuable",meaning:"ارزشمند",example:"Keep valuable items safe.",exampleFa:"وسایل ارزشمند را امن نگه دار.",level:"A2"},
+{word:"device",meaning:"دستگاه",example:"This device measures temperature.",exampleFa:"این دستگاه دما را اندازه می‌گیرد.",level:"B1"}
+  ]},
+  { id: 30, title: "درس 30", topic: "Crime — جرم و جنایت", words: [
+    {word:"thief",meaning:"دزد",example:"The thief was caught.",exampleFa:"دزد دستگیر شد.",level:"A2"},
+{word:"steal",meaning:"دزدیدن",example:"Someone tried to steal my bike.",exampleFa:"کسی سعی کرد دوچرخه‌ام را بدزدد.",level:"A2"},
+{word:"rob",meaning:"سرقت کردن از مکان/شخص",example:"They robbed a shop.",exampleFa:"آن‌ها از مغازه‌ای سرقت کردند.",level:"B1"},
+{word:"witness",meaning:"شاهد",example:"A witness spoke to police.",exampleFa:"شاهد با پلیس صحبت کرد.",level:"B1"}
   ]}
 ];
 
@@ -210,8 +247,8 @@ export default function WordSkillsPage() {
       <div className="eyebrow">LESSON-BY-LESSON VOCABULARY</div>
       <h1>Word Skills <span>Elementary</span></h1>
       <p>واژه‌ها را درس‌به‌درس بخوان، مثال را بررسی کن و فقط کلماتی را که می‌خواهی با یک کلیک به بانک شخصی LEXORA اضافه کن.</p>
-      <div className="wordskills-notice">توجه: فهرست فعلی، واژگان نمونهٔ آموزشیِ تألیفی است و لزوماً با ترتیب یا فهرست دقیق کتاب یکی نیست. اگر صفحات درس‌ها یا فایل کتابی که در اختیار داری را بارگذاری کنی، می‌توانم فهرست‌ها را با همان نسخه تطبیق بدهم.</div>
-      <div className="wordskills-stats"><div><strong>{lessons.length}</strong><span>درس نمونه</span></div><div><strong>{lessons.reduce((n,l)=>n+l.words.length,0)}</strong><span>واژهٔ نمونه</span></div><div><strong>{bankWords.length}</strong><span>واژه در بانک فعلی</span></div></div>
+      <div className="wordskills-notice">این صفحه با فهرست واقعی ویرایش دوم کتاب هماهنگ شده است. مثال‌ها و ترجمه‌ها برای تمرین، تازه و تألیفی هستند.</div>
+      <div className="wordskills-stats"><div><strong>{lessons.length}</strong><span>درس مطابق فهرست کتاب</span></div><div><strong>{lessons.reduce((n,l)=>n+l.words.length,0)}</strong><span>واژهٔ آموزشی</span></div><div><strong>{bankWords.length}</strong><span>واژه در بانک فعلی</span></div></div>
     </section>
     <section className="wordskills-layout">
       <aside className="panel wordskills-lessons">
