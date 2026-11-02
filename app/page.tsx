@@ -140,6 +140,10 @@ export default function Home() {
   const [academyQueue, setAcademyQueue] = useState<Word[]>([]);
   const [academyIndex, setAcademyIndex] = useState(0);
   const [academyRevealed, setAcademyRevealed] = useState(false);
+  const [academyMeaningGuess, setAcademyMeaningGuess] = useState("");
+  const [academyMeaningChecked, setAcademyMeaningChecked] = useState(false);
+  const [academyClozeGuess, setAcademyClozeGuess] = useState("");
+  const [academyClozeChecked, setAcademyClozeChecked] = useState(false);
   const [academyDone, setAcademyDone] = useState(false);
   const [academyCorrect, setAcademyCorrect] = useState(0);
   const [academyReviewed, setAcademyReviewed] = useState(0);
@@ -436,6 +440,7 @@ export default function Home() {
       [queue[i], queue[j]] = [queue[j], queue[i]];
     }
     setAcademyQueue(queue); setAcademyIndex(0); setAcademyRevealed(false);
+    setAcademyMeaningGuess(""); setAcademyMeaningChecked(false); setAcademyClozeGuess(""); setAcademyClozeChecked(false);
     setAcademyDone(false); setAcademyCorrect(0); setAcademyReviewed(0); setModal("academy");
   }
 
@@ -470,7 +475,7 @@ export default function Home() {
     setAcademyReviewed(n => n + 1);
     if (rating !== "again") setAcademyCorrect(n => n + 1);
     if (academyIndex + 1 >= academyQueue.length) setAcademyDone(true);
-    else { setAcademyIndex(n => n + 1); setAcademyRevealed(false); }
+    else { setAcademyIndex(n => n + 1); setAcademyRevealed(false); setAcademyMeaningGuess(""); setAcademyMeaningChecked(false); setAcademyClozeGuess(""); setAcademyClozeChecked(false); }
   }
 
   function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze") {
@@ -736,22 +741,53 @@ export default function Home() {
               <>
                 <div className="academy-progress-head"><span>جلسه کوتاه روزانه</span><span>{academyIndex + 1} از {academyQueue.length}</span></div>
                 <div className="progress-track academy-track"><div className="progress-fill" style={{ width: `${((academyIndex + (academyRevealed ? .5 : 0)) / academyQueue.length) * 100}%` }}/></div>
-                <div className="academy-card">
+                <div className="academy-card academy-card-interactive">
                   <div className="academy-card-top"><span className="level">{academyQueue[academyIndex].level}</span><span className="academy-category">{academyQueue[academyIndex].category}</span></div>
+                  <div className="academy-step-label"><span>مرحله ۱ از ۳</span><span>یادآوری از حافظه</span></div>
                   <div className="academy-word" dir="ltr">{academyQueue[academyIndex].word}</div>
                   <button className="icon-btn academy-sound" title="شنیدن تلفظ" aria-label="شنیدن تلفظ" onClick={() => speak(academyQueue[academyIndex].word)}><Volume2 size={19}/></button>
-                  <p className="academy-prompt">قبل از دیدن پاسخ، سعی کن معنی را از حافظه به یاد بیاوری.</p>
-                  {!academyRevealed ? <button className="btn btn-primary academy-reveal" onClick={() => setAcademyRevealed(true)}><Brain size={17}/> نمایش پاسخ و مثال</button> : (
+                  <p className="academy-prompt">قبل از دیدن معنی، هر چیزی که به خاطر داری بنویس. حتی اگر مطمئن نیستی، حدس بزن.</p>
+                  {!academyMeaningChecked ? (
+                    <div className="academy-input-stage">
+                      <label htmlFor="academy-meaning-guess">معنی فارسی که به ذهنت می‌رسد</label>
+                      <input id="academy-meaning-guess" className="field" value={academyMeaningGuess} onChange={e => setAcademyMeaningGuess(e.target.value)} placeholder="معنی را با کلمات خودت بنویس…" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); setAcademyMeaningChecked(true); setAcademyRevealed(true); } }} />
+                      <button className="btn btn-primary academy-reveal" onClick={() => { setAcademyMeaningChecked(true); setAcademyRevealed(true); }}><Brain size={17}/> بررسی حدس و دیدن پاسخ</button>
+                    </div>
+                  ) : (
                     <div className="academy-answer">
+                      <div className="academy-feedback-note">{academyMeaningGuess.trim() ? "حدس تو ثبت شد؛ معنی درست را بخوان و تفاوت‌ها را بررسی کن." : "این بار بدون حدس رفتی سراغ پاسخ؛ دفعهٔ بعد اول خودت تلاش کن."}</div>
                       <div className="academy-meaning">{academyQueue[academyIndex].meaning || "معنی فارسی هنوز ثبت نشده است."}</div>
                       {academyQueue[academyIndex].definition && <div className="academy-definition">{academyQueue[academyIndex].definition}</div>}
                       {academyQueue[academyIndex].example && <div className="academy-example"><p dir="ltr">{academyQueue[academyIndex].example}</p>{academyQueue[academyIndex].exampleFa && <p>{academyQueue[academyIndex].exampleFa}</p>}</div>}
-                      <div className="academy-recall-tip">حالا بدون نگاه‌کردن، معنی و کاربرد کلمه را یک بار با صدای بلند بگو.</div>
-                      <div className="academy-rating-label">چقدر راحت یادت آمد؟</div>
+                      <div className="academy-step-label"><span>مرحله ۲ از ۳</span><span>کاربرد در جمله</span></div>
+                      {academyQueue[academyIndex].example && academyQueue[academyIndex].example.toLowerCase().includes(academyQueue[academyIndex].word.toLowerCase()) ? (
+                        <>
+                          <p className="academy-prompt">جمله را کامل کن؛ کلمهٔ انگلیسی را بدون نگاه‌کردن به بالا به یاد بیاور.</p>
+                          <div className="academy-cloze" dir="ltr">{clozeExample(academyQueue[academyIndex].example, academyQueue[academyIndex].word)}</div>
+                          {!academyClozeChecked ? (
+                            <div className="academy-input-stage">
+                              <label htmlFor="academy-cloze-guess">کلمهٔ جاافتاده</label>
+                              <input id="academy-cloze-guess" className="field" dir="ltr" value={academyClozeGuess} onChange={e => setAcademyClozeGuess(e.target.value)} placeholder="Type the missing word…" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); setAcademyClozeChecked(true); } }} />
+                              <button className="btn academy-check-cloze" onClick={() => setAcademyClozeChecked(true)}>بررسی پاسخ <Check size={15}/></button>
+                            </div>
+                          ) : (
+                            <div className={`academy-cloze-feedback ${academyClozeGuess.trim().toLowerCase() === academyQueue[academyIndex].word.trim().toLowerCase() ? "is-correct" : "is-wrong"}`}>
+                              <strong>{academyClozeGuess.trim().toLowerCase() === academyQueue[academyIndex].word.trim().toLowerCase() ? "درست است!" : "پاسخ درست:"}</strong>
+                              <span dir="ltr">{academyQueue[academyIndex].word}</span>
+                              {academyQueue[academyIndex].exampleFa && <small>{academyQueue[academyIndex].exampleFa}</small>}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="academy-prompt">برای این کلمه مثال قابل تمرین در بانک نیست؛ معنی و تعریف را مرور کن و سپس میزان تسلطت را انتخاب کن.</p>
+                      )}
+                      <div className="academy-step-label"><span>مرحله ۳ از ۳</span><span>برنامه‌ریزی مرور</span></div>
+                      <div className="academy-recall-tip">صادقانه انتخاب کن: پاسخ را واقعاً از حافظه می‌دانستی یا فقط بعد از دیدن آن شناختی؟</div>
+                      <div className="academy-rating-label">چقدر مستقل توانستی به یاد بیاوری؟</div>
                       <div className="academy-ratings">
                         <button className="academy-rate again" onClick={() => rateAcademyWord("again")}><RotateCcw size={16}/><strong>یادم نیامد</strong><small>مرور دوباره در ۱۰ دقیقه</small></button>
                         <button className="academy-rate hard" onClick={() => rateAcademyWord("hard")}><CircleHelp size={16}/><strong>با سختی</strong><small>مرور فردا</small></button>
-                        <button className="academy-rate good" onClick={() => rateAcademyWord("good")}><Check size={16}/><strong>بلدم</strong><small>فاصله مرور بیشتر</small></button>
+                        <button className="academy-rate good" onClick={() => rateAcademyWord("good")}><Check size={16}/><strong>از حافظه بلدم</strong><small>فاصلهٔ مرور بیشتر</small></button>
                       </div>
                     </div>
                   )}
