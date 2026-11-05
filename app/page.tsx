@@ -576,12 +576,10 @@ export default function Home() {
           academyLastStudiedAt: Number(item.academyLastStudiedAt) || undefined
         })).filter(item => item.word && item.meaning);
       if (!imported.length) throw new Error("empty");
-      const existing = new Set(words.map(w => normalizeWordKey(w.word)));
-      const unique = deduplicateWords(imported).filter(w => { const key = normalizeWordKey(w.word); if (existing.has(key)) return false; existing.add(key); return true; });
-      if (!unique.length) { alert("همهٔ واژه‌های فایل از قبل در بانک هستند؛ چیزی تغییر نکرد."); return; }
-      if (!confirm(`${unique.length} واژهٔ جدید به بانک اضافه شود؟ واژه‌های فعلی حذف نمی‌شوند.`)) return;
-      setWords(current => [...unique, ...current]);
-      alert(`${unique.length} واژه با موفقیت وارد شد.`);
+      const restored = deduplicateWords(imported);
+      if (!confirm(`بازیابی پشتیبان شامل ${restored.length} واژه است. بانک فعلی این گوشی با اطلاعات فایل جایگزین می‌شود. قبل از ادامه مطمئن شو فایل از گوشی قبلی است. ادامه می‌دهی؟`)) return;
+      setWords(restored);
+      alert(`بازیابی انجام شد؛ ${restored.length} واژه وارد بانک شد.`);
     } catch {
       alert("فایل معتبر نیست. فایل پشتیبان JSON خروجی LEXORA را انتخاب کن.");
     } finally { e.target.value = ""; }
