@@ -627,3 +627,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .wordskills-add span,.wordskills-added span { display:flex; }
 @media(max-width:800px){.wordskills-layout{grid-template-columns:1fr}.wordskills-lesson-list{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}.wordskills-lessons{padding:13px}.wordskills-word{align-items:flex-start}}
 @media(max-width:560px){.wordskills-page .topbar{align-items:flex-start;flex-wrap:wrap}.wordskills-page .top-actions{width:100%}.wordskills-page .top-actions .btn{flex:1;justify-content:center;font-size:10px}.wordskills-lesson-list{grid-template-columns:1fr 1fr}.wordskills-list{padding:12px}.wordskills-word{flex-direction:column}.wordskills-add,.wordskills-added{width:100%}.wordskills-list-head h2{font-size:15px}.wordskills-progress{font-size:11px}}
+
+
+/* Bulk vocabulary capture */
+.bulk-format-example { margin:10px 0 14px; padding:12px 14px; border:1px solid rgba(184,165,255,.2); border-radius:11px; background:rgba(184,165,255,.045); color:#d7d0f6; font:12px/2 "DM Sans","Vazirmatn",sans-serif; text-align:left; }
+.bulk-words-input { width:100%; min-height:220px; resize:vertical; direction:ltr; text-align:left; font:13px/1.8 "DM Sans",monospace; }
+.bulk-result { margin:10px 0; padding:11px 13px; border:1px solid rgba(110,231,194,.22); border-radius:10px; color:#9ee9d5; background:rgba(110,231,194,.045); font-size:12px; line-height:1.8; }
