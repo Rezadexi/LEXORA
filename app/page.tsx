@@ -136,7 +136,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("همه");
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-  const [modal, setModal] = useState<"add" | "detail" | "quiz" | "academy" | null>(null);
+  const [modal, setModal] = useState<"add" | "bulk" | "detail" | "quiz" | "academy" | null>(null);
   const [academyQueue, setAcademyQueue] = useState<Word[]>([]);
   const [academyIndex, setAcademyIndex] = useState(0);
   const [academyRevealed, setAcademyRevealed] = useState(false);
@@ -160,6 +160,8 @@ export default function Home() {
   const [wrongIds, setWrongIds] = useState<string[]>([]);
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
+  const [bulkText, setBulkText] = useState("");
+  const [bulkMessage, setBulkMessage] = useState("");
   const [checkedRelated, setCheckedRelated] = useState<string[]>([]);
   const [form, setForm] = useState({
     word: "", meaning: "", category: "Daily English", level: "نامشخص",
@@ -412,6 +414,36 @@ export default function Home() {
     setFilter("همه");
   }
 
+  function importBulkWords() {
+    const lines = bulkText.split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);
+    if (!lines.length) { setBulkMessage("اول فهرست واژه‌ها را وارد کن."); return; }
+    const existing = new Set(words.map(w => normalizeWordKey(w.word)));
+    const seen = new Set<string>();
+    const additions: Word[] = [];
+    let duplicates = 0;
+    for (const line of lines) {
+      // Accepted formats: word | Persian meaning, word<TAB>meaning, or just word.
+      const parts = line.split(/\\s*(?:\\||\\t|;|؛)\\s*/);
+      const term = (parts.shift() || "").trim().replace(/^[-•*\\d.)\\s]+/, "").trim();
+      const meaning = parts.join(" — ").trim();
+      if (!term || !/[a-zA-Z]/.test(term)) continue;
+      const key = normalizeWordKey(term);
+      if (existing.has(key) || seen.has(key)) { duplicates++; continue; }
+      seen.add(key);
+      additions.push({
+        id: crypto.randomUUID(), word: term, meaning: meaning || "معنی وارد نشده؛ تکمیل خودکار را اجرا کن",
+        category: "Academic", level: "نامشخص", definition: "", example: "", exampleFa: "",
+        synonyms: "", antonyms: "", createdAt: Date.now(), correct: 0, reviews: 0
+      });
+    }
+    if (!additions.length) { setBulkMessage("واژهٔ تازه‌ای برای افزودن پیدا نشد؛ موارد تکراری یا نامعتبر نادیده گرفته شدند."); return; }
+    setWords(current => [...additions, ...current]);
+    setBulkMessage(`${additions.length} واژه اضافه شد؛ ${duplicates} مورد تکراری رد شد. برای هر واژه می‌توانی بعداً اطلاعات را تکمیل کنی.`);
+    setBulkText("");
+    setQuery("");
+    setFilter("همه");
+  }
+
   function deleteWord(id: string) {
     if (!confirm("این لغت از بانک لغات حذف شود؟")) return;
     setWords(current => current.filter(w => w.id !== id));
@@ -603,6 +635,7 @@ export default function Home() {
         <div className="top-actions">
           <a className="btn btn-small coll-nav-link" href="/LEXORA/collocations/"><Sparkles size={15}/> کالوکیشن و اصطلاحات</a>
           <a className="btn btn-small wordskills-nav-link" href="/LEXORA/word-skills/"><BookOpen size={15}/> Word Skills</a>
+          <button className="btn btn-small" onClick={() => { setBulkText(""); setBulkMessage(""); setModal("bulk"); }}><Layers3 size={15}/> ورود گروهی</button>
           <button className="btn btn-small" onClick={exportWords}><ArrowDownLeft size={15}/> خروجی بانک</button>
           <button className="btn btn-small" onClick={() => document.getElementById("lexora-import-file")?.click()}><BookOpen size={15}/> ورود پشتیبان</button>
           <input id="lexora-import-file" type="file" accept="application/json,.json" onChange={importWords} style={{ display: "none" }} />
@@ -794,6 +827,20 @@ export default function Home() {
                 <p className="academy-footnote">LEXORA پاسخ‌هایت را فقط روی همین دستگاه ذخیره می‌کند؛ بانک لغات فعلی دست‌نخورده می‌ماند.</p>
               </>
             ) : <div className="empty">برای شروع، چند واژه در بانک ذخیره کن.</div>}
+          </div>
+        </div>
+      )}
+
+      {modal === "bulk" && (
+        <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal(null); }}>
+          <div className="modal">
+            <div className="modal-head"><h2>افزودن گروهی واژه‌ها</h2><button className="icon-btn" onClick={() => setModal(null)}><X size={18}/></button></div>
+            <p className="muted" style={{ lineHeight: 1.9 }}>فهرست واژه‌ها را از جزوه، PDF یا متن OCR کپی و اینجا جای‌گذاری کن؛ هر واژه در یک خط. می‌توانی فقط واژه انگلیسی را وارد کنی یا معنی فارسی را هم بعد از جداکننده بنویسی.</p>
+            <div className="bulk-format-example" dir="ltr">resilient | تاب‌آور<br/>subtle | ظریف، نامحسوس<br/>starvation</div>
+            <div className="form-field"><label>فهرست واژه‌ها (هر خط یک واژه)</label><textarea className="field bulk-words-input" value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"resilient\nsubtle | ظریف، نامحسوس\nstarvation"} rows={12} /></div>
+            <p className="muted" style={{fontSize:12}}>واژه‌های تکراری با بانک فعلی و تکراری‌های همین فهرست خودکار رد می‌شوند. این روش واژه‌ها را سریع وارد می‌کند؛ اطلاعات تکمیلی را می‌توانی بعداً اضافه کنی.</p>
+            {bulkMessage && <div className="bulk-result" role="status">{bulkMessage}</div>}
+            <div className="form-actions"><button className="btn btn-primary" onClick={importBulkWords}><Layers3 size={16}/> افزودن واژه‌ها به بانک</button><button className="btn" onClick={() => setModal(null)}>بستن</button></div>
           </div>
         </div>
       )}
