@@ -136,7 +136,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("همه");
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-  const [modal, setModal] = useState<"add" | "bulk" | "detail" | "quiz" | "academy" | null>(null);
+  const [modal, setModal] = useState<"add" | "bulk" | "detail" | "edit" | "quiz" | "academy" | null>(null);
   const [academyQueue, setAcademyQueue] = useState<Word[]>([]);
   const [academyIndex, setAcademyIndex] = useState(0);
   const [academyRevealed, setAcademyRevealed] = useState(false);
@@ -449,6 +449,27 @@ export default function Home() {
     setBulkText("");
     setQuery("");
     setFilter("همه");
+  }
+
+  function openEditWord() {
+    if (!selected) return;
+    setForm({ word: selected.word, meaning: selected.meaning, category: selected.category || "Other", level: selected.level || "نامشخص", definition: selected.definition || "", example: selected.example || "", exampleFa: selected.exampleFa || "", synonyms: selected.synonyms || "", antonyms: selected.antonyms || "" });
+    setCheckedRelated([]);
+    setModal("edit");
+  }
+
+  function updateWord(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!selected || !form.word.trim() || !form.meaning.trim()) return;
+    const normalized = normalizeWordKey(form.word);
+    if (words.some(w => w.id !== selected.id && normalizeWordKey(w.word) === normalized)) {
+      alert("واژه‌ای با این املاء در بانک وجود دارد. برای جلوگیری از تکرار، تغییر ذخیره نشد.");
+      return;
+    }
+    const updated = { ...selected, ...form, word: form.word.trim(), meaning: form.meaning.trim(), category: form.category || "Other", level: form.level || "نامشخص" };
+    setWords(current => current.map(w => w.id === selected.id ? updated : w));
+    setSelected(updated);
+    setModal("detail");
   }
 
   function deleteWord(id: string) {
@@ -887,6 +908,31 @@ export default function Home() {
         </div>
       )}
 
+      {modal === "edit" && selected && (
+        <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal("detail"); }}>
+          <div className="modal">
+            <div className="modal-head"><h2>ویرایش واژه</h2><button className="icon-btn" onClick={() => setModal("detail")}><X size={18}/></button></div>
+            <p className="muted" style={{ lineHeight: 1.8 }}>اطلاعات را اصلاح کن. سابقهٔ آزمون و مرور این واژه حفظ می‌شود.</p>
+            <form onSubmit={updateWord}>
+              <div className="form-grid">
+                <div className="form-field"><label>واژه انگلیسی *</label>{input("word", "English word", true)}</div>
+                <div className="form-field"><label>معنی فارسی *</label>{input("meaning", "معنی فارسی", true)}</div>
+                <div className="form-field"><label>سطح</label><select className="field" value={form.level} onChange={e => setForm(current => ({ ...current, level: e.target.value }))}>{levels.map(level => <option key={level}>{level}</option>)}</select></div>
+                <div className="form-field"><label>دسته‌بندی</label><select className="field" value={form.category} onChange={e => setForm(current => ({ ...current, category: e.target.value }))}>{categories.map(category => <option key={category}>{category}</option>)}</select></div>
+              </div>
+              <div className="form-field"><label>تعریف انگلیسی</label>{input("definition", "English definition")}</div>
+              <div className="form-field"><label>مثال انگلیسی</label>{input("example", "Natural example sentence")}</div>
+              <div className="form-field"><label>ترجمهٔ مثال</label>{input("exampleFa", "ترجمه فارسی جمله")}</div>
+              <div className="form-grid">
+                <div className="form-field"><label>مترادف‌ها (واژه — معنی)</label>{input("synonyms", "word — معنی || word — معنی")}</div>
+                <div className="form-field"><label>متضادها (واژه — معنی)</label>{input("antonyms", "word — معنی || word — معنی")}</div>
+              </div>
+              <div className="form-actions"><button className="btn btn-primary" type="submit"><Check size={16}/> ذخیره تغییرات</button><button className="btn" type="button" onClick={() => setModal("detail")}>انصراف</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {modal === "detail" && selected && (
         <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModal(null); }}>
           <div className="modal">
@@ -901,7 +947,7 @@ export default function Home() {
             {selected.example && <div className="detail-section"><h3>EXAMPLE IN CONTEXT</h3><p dir="ltr" style={{ textAlign: "left" }}>{selected.example}</p>{selected.exampleFa && <p style={{ color: "#aaaabd", marginTop: 7 }}>{selected.exampleFa}</p>}</div>}
             {selected.synonyms && <div className="detail-section"><h3>SYNONYMS · مترادف‌ها</h3><div className="related-columns">{parseRelatedItems(selected.synonyms).map((item, index) => <div className="related-line" key={item.word + index}><span dir="ltr">{item.word}</span><span>{item.meaning || "—"}</span></div>)}</div></div>}
             {selected.antonyms && <div className="detail-section"><h3>ANTONYMS · متضادها</h3><div className="related-columns">{parseRelatedItems(selected.antonyms).map((item, index) => <div className="related-line" key={item.word + index}><span dir="ltr">{item.word}</span><span>{item.meaning || "—"}</span></div>)}</div></div>}
-            <div className="form-actions"><button className="btn" onClick={() => { setModal(null); setSelected(null); }}><Check size={16}/> تمام</button>{!selected.id.startsWith("demo-") && <button className="btn" onClick={() => deleteWord(selected.id)}><Trash2 size={15}/> حذف واژه</button>}</div>
+            <div className="form-actions"><button className="btn btn-primary" onClick={openEditWord}><BookOpen size={15}/> ویرایش اطلاعات</button><button className="btn" onClick={() => { setModal(null); setSelected(null); }}><Check size={16}/> تمام</button>{!selected.id.startsWith("demo-") && <button className="btn" onClick={() => deleteWord(selected.id)}><Trash2 size={15}/> حذف واژه</button>}</div>
           </div>
         </div>
       )}
