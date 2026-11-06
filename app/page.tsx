@@ -597,12 +597,37 @@ export default function Home() {
     else { setQuizIndex(i => i + 1); setQuizChoice(null); }
   }
 
-  function exportWords() {
-    const blob = new Blob([JSON.stringify(words, null, 2)], { type: "application/json" });
+  function downloadJsonBackup(data: unknown, filename: string) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "lexora-vocabulary-backup.json"; a.click();
+    a.href = url; a.download = filename; a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportWords() {
+    // Keep the original vocabulary-only format for backwards compatibility.
+    downloadJsonBackup(words, "lexora-vocabulary-backup.json");
+  }
+
+  function exportFullBackup() {
+    const readStoredJson = (key: string): unknown => {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw === null ? null : JSON.parse(raw);
+      } catch { return null; }
+    };
+    downloadJsonBackup({
+      type: "lexora-full-backup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data: {
+        words,
+        wrongWordIds: wrongIds,
+        enrichCache: readStoredJson(ENRICH_CACHE_KEY),
+        collocationsProgress: readStoredJson("lexora.collocations.v1")
+      }
+    }, "lexora-full-backup.json");
   }
 
   async function importWords(e: React.ChangeEvent<HTMLInputElement>) {
@@ -610,8 +635,15 @@ export default function Home() {
     if (!file) return;
     try {
       const parsed: unknown = JSON.parse(await file.text());
-      if (!Array.isArray(parsed)) throw new Error("format");
-      const imported: Word[] = parsed.filter((item): item is Word => !!item && typeof item === "object" && typeof (item as Word).word === "string" && typeof (item as Word).meaning === "string")
+      const isFullBackup = !!parsed && typeof parsed === "object"
+        && (parsed as { type?: unknown }).type === "lexora-full-backup"
+        && (parsed as { version?: unknown }).version === 1
+        && !!(parsed as { data?: unknown }).data
+        && typeof (parsed as { data?: unknown }).data === "object";
+      const backupData = isFullBackup ? (parsed as { data: { words?: unknown; wrongWordIds?: unknown; enrichCache?: unknown; collocationsProgress?: unknown } }).data : null;
+      const sourceWords = isFullBackup ? backupData?.words : parsed;
+      if (!Array.isArray(sourceWords)) throw new Error("format");
+      const imported: Word[] = sourceWords.filter((item): item is Word => !!item && typeof item === "object" && typeof (item as Word).word === "string" && typeof (item as Word).meaning === "string")
         .map(item => ({
           id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
           word: item.word.trim(), meaning: item.meaning, category: item.category || "Other", level: item.level || "نامشخص",
@@ -634,7 +666,22 @@ export default function Home() {
       if (replaceAll) {
         if (!confirm("هشدار نهایی: بانک فعلی با فایل جایگزین می‌شود. اگر پشتیبان داری، ادامه بده. مطمئنی؟")) return;
         setWords(restored);
-        alert(`بازیابی کامل انجام شد؛ ${restored.length} واژه وارد بانک شد.`);
+        if (isFullBackup && backupData) {
+          if (Array.isArray(backupData.wrongWordIds)) {
+            const restoredWrongIds = backupData.wrongWordIds.filter((id): id is string => typeof id === "string");
+            setWrongIds(restoredWrongIds);
+            try { localStorage.setItem("lexora.wrong-words.v1", JSON.stringify(restoredWrongIds)); } catch {}
+          }
+          if (backupData.enrichCache !== undefined) {
+            try { localStorage.setItem(ENRICH_CACHE_KEY, JSON.stringify(backupData.enrichCache)); } catch {}
+          }
+          if (backupData.collocationsProgress !== undefined && backupData.collocationsProgress !== null) {
+            try { localStorage.setItem("lexora.collocations.v1", JSON.stringify(backupData.collocationsProgress)); } catch {}
+          }
+          alert(`بازیابی کامل انجام شد؛ ${restored.length} واژه و داده‌های پشتیبانی‌شدهٔ یادگیری بازیابی شدند.`);
+        } else {
+          alert(`بازیابی بانک انجام شد؛ ${restored.length} واژه وارد بانک شد.`);
+        }
       } else {
         const merged = deduplicateWords([...words, ...restored]);
         const added = merged.length - words.length;
@@ -666,6 +713,7 @@ export default function Home() {
           <a className="btn btn-small wordskills-nav-link" href="/LEXORA/word-skills/"><BookOpen size={15}/> Word Skills</a>
           <button className="btn btn-small" onClick={() => { setBulkText(""); setBulkMessage(""); setModal("bulk"); }}><Layers3 size={15}/> ورود گروهی</button>
           <button className="btn btn-small" onClick={exportWords}><ArrowDownLeft size={15}/> خروجی بانک</button>
+          <button className="btn btn-small" onClick={exportFullBackup}><ArrowDownLeft size={15}/> پشتیبان کامل</button>
           <button className="btn btn-small" onClick={() => document.getElementById("lexora-import-file")?.click()}><BookOpen size={15}/> ورود پشتیبان</button>
           <input id="lexora-import-file" type="file" accept="application/json,.json" onChange={importWords} style={{ display: "none" }} />
           <button className="btn btn-primary btn-small" onClick={openAdd}><Plus size={16}/> لغت جدید</button>
