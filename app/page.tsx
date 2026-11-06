@@ -107,8 +107,12 @@ function deduplicateWords(items: Word[]): Word[] {
     byKey.set(key, {
       ...existing,
       meaning: existing.meaning && !existing.meaning.includes("در دسترس نیست") ? existing.meaning : (item.meaning || existing.meaning),
-      category: existing.category || item.category || "Other",
-      level: existing.level && existing.level !== "نامشخص" ? existing.level : (item.level || "نامشخص"),
+      category: (!existing.category || existing.category === "Daily English" || existing.category === "Other")
+        ? (item.category && item.category !== "Daily English" && item.category !== "Other" ? item.category : (existing.category || item.category || "Other"))
+        : existing.category,
+      level: (!existing.level || existing.level === "نامشخص")
+        ? (item.level && item.level !== "نامشخص" ? item.level : (existing.level || item.level || "نامشخص"))
+        : existing.level,
       definition: preferred.definition || existing.definition || item.definition || "",
       example: preferred.example || existing.example || item.example || "",
       exampleFa: preferred.exampleFa || existing.exampleFa || item.exampleFa || "",
