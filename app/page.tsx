@@ -736,7 +736,10 @@ export default function Home() {
       const backupData = isFullBackup ? (parsed as { data: { words?: unknown; wrongWordIds?: unknown; enrichCache?: unknown; translationCache?: unknown; collocationsProgress?: unknown } }).data : null;
       const sourceWords = isFullBackup ? backupData?.words : parsed;
       if (!Array.isArray(sourceWords)) throw new Error("format");
-      const imported: Word[] = sourceWords.filter((item): item is Word => !!item && typeof item === "object" && typeof (item as Word).word === "string" && typeof (item as Word).meaning === "string")
+      const validSourceWords = sourceWords.filter((item): item is Word => !!item && typeof item === "object" && typeof (item as Word).word === "string" && typeof (item as Word).meaning === "string");
+      // Never allow a damaged backup to silently replace the bank with only its valid subset.
+      if (validSourceWords.length !== sourceWords.length) throw new Error("invalid-entries");
+      const imported: Word[] = validSourceWords
         .map(item => ({
           id: typeof item.id === "string" ? item.id : crypto.randomUUID(),
           word: item.word.trim(), meaning: item.meaning, category: item.category || "Other", level: item.level || "نامشخص",
@@ -753,7 +756,7 @@ export default function Home() {
           academyNextReviewAt: Number(item.academyNextReviewAt) || undefined,
           academyLastStudiedAt: Number(item.academyLastStudiedAt) || undefined
         })).filter(item => item.word && item.meaning);
-      if (!imported.length) throw new Error("empty");
+      if (!imported.length || imported.length !== sourceWords.length) throw new Error("empty-or-invalid");
       const restored = deduplicateWords(imported);
       const replaceAll = confirm(`فایل پشتیبان ${restored.length} واژه دارد.\n\nOK = جایگزینی کامل بانک فعلی (حذف داده‌های فعلی این دستگاه)\nCancel = رفتن به گزینهٔ ادغام با بانک فعلی`);
       if (replaceAll) {
