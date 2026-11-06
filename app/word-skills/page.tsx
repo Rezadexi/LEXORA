@@ -289,8 +289,8 @@ export default function WordSkillsPage() {
 
   return <main className="app-shell wordskills-page">
     <header className="topbar">
-      <Link className="brand wordskills-brand" href="/LEXORA/"><div className="brand-mark"><BookOpen size={22}/></div><div><div className="brand-name">LEXORA</div><div className="brand-sub">WORD SKILLS · ELEMENTARY</div></div></Link>
-      <div className="top-actions"><Link className="btn btn-small" href="/LEXORA/"><ArrowRight size={15}/> بازگشت به بانک</Link><Link className="btn btn-small coll-nav-link" href="/LEXORA/collocations/"><Layers3 size={15}/> کالوکیشن‌ها</Link></div>
+      <Link className="brand wordskills-brand" href="/"><div className="brand-mark"><BookOpen size={22}/></div><div><div className="brand-name">LEXORA</div><div className="brand-sub">WORD SKILLS · ELEMENTARY</div></div></Link>
+      <div className="top-actions"><Link className="btn btn-small" href="/"><ArrowRight size={15}/> بازگشت به بانک</Link><Link className="btn btn-small coll-nav-link" href="/collocations/"><Layers3 size={15}/> کالوکیشن‌ها</Link></div>
     </header>
     <section className="panel wordskills-hero">
       <div className="eyebrow">LESSON-BY-LESSON VOCABULARY</div>
