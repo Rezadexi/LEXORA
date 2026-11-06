@@ -7,10 +7,22 @@ import { ArrowRight, BookOpen, Check, Plus, Search, Volume2, Layers3 } from "luc
 type LessonWord = { word: string; meaning: string; example: string; exampleFa: string; level: string };
 const lessons: { id: number; title: string; topic: string; words: LessonWord[] }[] = [
   { id: 1, title: "درس 1", topic: "Classroom vocabulary — واژگان کلاس درس", words: [
-    {word:"whiteboard",meaning:"تخته وایت‌برد",example:"The teacher writes on the whiteboard.",exampleFa:"معلم روی تخته می‌نویسد.",level:"A1"},
-{word:"desk",meaning:"میز",example:"My desk is near the window.",exampleFa:"میزم کنار پنجره است.",level:"A1"},
-{word:"coursebook",meaning:"کتاب درسی",example:"Open your coursebook.",exampleFa:"کتاب درسی‌ات را باز کن.",level:"A1"},
-{word:"dictionary",meaning:"فرهنگ لغت",example:"Use a dictionary.",exampleFa:"از فرهنگ لغت استفاده کن.",level:"A1"}
+    {word:"whiteboard",meaning:"تختهٔ وایت‌برد",example:"The teacher writes on the whiteboard.",exampleFa:"معلم روی تختهٔ وایت‌برد می‌نویسد.",level:"A1"},
+    {word:"board pen",meaning:"ماژیک وایت‌برد",example:"Please use a board pen.",exampleFa:"لطفاً از ماژیک وایت‌برد استفاده کن.",level:"A1"},
+    {word:"noticeboard",meaning:"تابلوی اعلانات",example:"The notice is on the noticeboard.",exampleFa:"اطلاعیه روی تابلوی اعلانات است.",level:"A2"},
+    {word:"notice",meaning:"اطلاعیه؛ اعلان",example:"I read the notice carefully.",exampleFa:"اطلاعیه را با دقت خواندم.",level:"A2"},
+    {word:"desk",meaning:"میز تحریر؛ میز کار",example:"My desk is near the window.",exampleFa:"میزم نزدیک پنجره است.",level:"A1"},
+    {word:"chair",meaning:"صندلی",example:"Please sit on this chair.",exampleFa:"لطفاً روی این صندلی بنشین.",level:"A1"},
+    {word:"bag",meaning:"کیف؛ کوله‌پشتی",example:"My books are in my bag.",exampleFa:"کتاب‌هایم داخل کیفم هستند.",level:"A1"},
+    {word:"pen",meaning:"خودکار",example:"I write with a blue pen.",exampleFa:"با خودکار آبی می‌نویسم.",level:"A1"},
+    {word:"coursebook",meaning:"کتاب درسی دوره",example:"Open your coursebook to page ten.",exampleFa:"کتاب درسی‌ات را در صفحهٔ ده باز کن.",level:"A1"},
+    {word:"pencil",meaning:"مداد",example:"I need a pencil to draw a line.",exampleFa:"برای کشیدن یک خط به مداد نیاز دارم.",level:"A1"},
+    {word:"table",meaning:"میز",example:"The dictionary is on the table.",exampleFa:"فرهنگ لغت روی میز است.",level:"A1"},
+    {word:"dictionary",meaning:"فرهنگ لغت؛ واژه‌نامه",example:"Look up the word in a dictionary.",exampleFa:"کلمه را در یک فرهنگ لغت جست‌وجو کن.",level:"A1"},
+    {word:"CD",meaning:"لوح فشرده",example:"The course includes a CD.",exampleFa:"این دوره شامل یک لوح فشرده است.",level:"A1"},
+    {word:"CD player",meaning:"دستگاه پخش سی‌دی",example:"The CD player is on the desk.",exampleFa:"دستگاه پخش سی‌دی روی میز است.",level:"A1"},
+    {word:"piece of paper",meaning:"یک برگ کاغذ؛ تکه‌ای کاغذ",example:"Write your name on a piece of paper.",exampleFa:"نامت را روی یک برگ کاغذ بنویس.",level:"A1"},
+    {word:"exercise book / notebook",meaning:"دفتر تمرین؛ دفتر یادداشت",example:"Write the answers in your exercise book.",exampleFa:"پاسخ‌ها را در دفتر تمرینت بنویس.",level:"A1"}
   ]},
   { id: 2, title: "درس 2", topic: "Grammar words — واژه‌های دستوری", words: [
     {word:"noun",meaning:"اسم",example:"Teacher is a noun.",exampleFa:"Teacher اسم است.",level:"A2"},
