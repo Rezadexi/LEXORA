@@ -505,21 +505,59 @@ export default function Home() {
   }
 
   function importBulkWords() {
-    const lines = bulkText.split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);
-    if (!lines.length) { setBulkMessage("اول فهرست واژه‌ها را وارد کن."); return; }
+    // Support both one-record-per-line formats and alternating word/meaning lines.
+    const rawLines = bulkText
+      .replace(/\\r\\n?/g, "\\n")
+      .split("\\n")
+      .map(line => line.trim())
+      .filter(Boolean);
+    if (!rawLines.length) { setBulkMessage("اول فهرست واژه‌ها را وارد کن."); return; }
+
+    const hasPersian = (value: string) => /[\\u0600-\\u06FF]/.test(value);
+    const parseInline = (line: string) => {
+      const parts = line.split(/\\s*(?:\\||\\t|;|؛|—|–)\\s*/);
+      if (parts.length > 1) return { term: parts.shift()!.trim(), meaning: parts.join(" — ").trim() };
+      // Also accept "word: معنی" and "word - معنی" when the second part contains Persian.
+      const match = line.match(/^([A-Za-z][A-Za-z' -]*?)\\s*[:：-]\\s*(.+)$/);
+      if (match && hasPersian(match[2])) return { term: match[1].trim(), meaning: match[2].trim() };
+      return { term: line.trim(), meaning: "" };
+    };
+
+    const records: Array<{term:string;meaning:string}> = [];
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      if (hasPersian(line) && !/[A-Za-z]/.test(line)) {
+        // A Persian-only line is the meaning of the previous word if it has no meaning yet.
+        const previous = records[records.length - 1];
+        if (previous && !previous.meaning) previous.meaning = line;
+        continue;
+      }
+      const parsed = parseInline(line);
+      const term = parsed.term.replace(/^[-•*\\d.)\\s]+/, "").trim();
+      if (!term || !/[A-Za-z]/.test(term)) continue;
+      if (!parsed.meaning && i + 1 < rawLines.length && hasPersian(rawLines[i + 1]) && !/[A-Za-z]/.test(rawLines[i + 1])) {
+        parsed.meaning = rawLines[i + 1];
+        i++;
+      }
+      records.push({term, meaning: parsed.meaning});
+    }
+
+    if (!records.length) {
+      setBulkMessage("واژه‌ای قابل‌شناسایی پیدا نشد. هر واژه را در یک خط و معنی را در خط بعدی، یا به‌شکل word | معنی وارد کن.");
+      return;
+    }
     const existing = new Set(words.map(w => normalizeWordKey(w.word)));
     const seen = new Set<string>();
     const additions: Word[] = [];
     let duplicates = 0;
-    for (const line of lines) {
-      // Accepted formats: word | Persian meaning, word<TAB>meaning, or just word.
-      const parts = line.split(/\\s*(?:\\||\\t|;|؛)\\s*/);
-      const term = (parts.shift() || "").trim().replace(/^[-•*\\d.)\\s]+/, "").trim();
-      const meaning = parts.join(" — ").trim();
-      if (!term || !/[a-zA-Z]/.test(term)) continue;
+    let withoutMeaning = 0;
+    for (const record of records) {
+      const term = record.term.trim();
+      const meaning = record.meaning.trim();
       const key = normalizeWordKey(term);
       if (existing.has(key) || seen.has(key)) { duplicates++; continue; }
       seen.add(key);
+      if (!meaning) withoutMeaning++;
       additions.push({
         id: crypto.randomUUID(), word: term, meaning: meaning || "معنی وارد نشده؛ تکمیل خودکار را اجرا کن",
         category: "Academic", level: "نامشخص", definition: "", example: "", exampleFa: "",
@@ -528,7 +566,7 @@ export default function Home() {
     }
     if (!additions.length) { setBulkMessage("واژهٔ تازه‌ای برای افزودن پیدا نشد؛ موارد تکراری یا نامعتبر نادیده گرفته شدند."); return; }
     setWords(current => [...additions, ...current]);
-    setBulkMessage(`${additions.length} واژه اضافه شد؛ ${duplicates} مورد تکراری رد شد. برای هر واژه می‌توانی بعداً اطلاعات را تکمیل کنی.`);
+    setBulkMessage(`${additions.length} واژه جداگانه اضافه شد؛ ${duplicates} مورد تکراری رد شد؛ ${withoutMeaning} واژه بدون معنی تشخیص داده شد.`);
     setBulkText("");
     setQuery("");
     setFilter("همه");
