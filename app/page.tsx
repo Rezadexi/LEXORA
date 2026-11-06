@@ -47,6 +47,7 @@ function parseRelatedItems(raw: string): RelatedItem[] {
 
 const STORAGE_KEY = "lexora.words.v1";
 const ENRICH_CACHE_KEY = "lexora.enrich.cache.v1";
+const TRANSLATION_CACHE_KEY = "lexora.translation.cache.v1";
 const demoWords: Word[] = [
   {
     id: "demo-1", word: "Resilient", meaning: "تاب‌آور، انعطاف‌پذیر",
@@ -259,8 +260,24 @@ export default function Home() {
   async function translateToPersian(text: string, timeoutMs = 3200): Promise<string> {
     const source = text.trim();
     if (!source) return "";
+    const cacheKey = normalizeWordKey(source);
     const isUsable = (value: string) => !!value && value.toLowerCase() !== source.toLowerCase()
       && !/please use|quota|rate limit|translation unavailable|error/i.test(value);
+    // Reuse successful translations across words, examples, synonyms and antonyms on this device.
+    try {
+      const cache = JSON.parse(localStorage.getItem(TRANSLATION_CACHE_KEY) || "{}") as Record<string, string>;
+      const cached = cache[cacheKey];
+      if (typeof cached === "string" && isUsable(cached)) return cached;
+    } catch { /* A broken cache must never block translation. */ }
+    const remember = (translated: string) => {
+      try {
+        const cache = JSON.parse(localStorage.getItem(TRANSLATION_CACHE_KEY) || "{}") as Record<string, string>;
+        cache[cacheKey] = translated;
+        const entries = Object.entries(cache);
+        localStorage.setItem(TRANSLATION_CACHE_KEY, JSON.stringify(Object.fromEntries(entries.slice(-500))));
+      } catch { /* Translation still works if local storage is full or unavailable. */ }
+      return translated;
+    };
     // Try MyMemory first, then Google Translate's public endpoint if it is unavailable or rate-limited.
     try {
       const data = await fetchJson<{ responseData?: { translatedText?: string }; responseStatus?: number }>(
@@ -268,7 +285,7 @@ export default function Home() {
         timeoutMs
       );
       const translated = String(data?.responseData?.translatedText ?? "").trim();
-      if ((!data.responseStatus || data.responseStatus === 200) && isUsable(translated)) return translated;
+      if ((!data.responseStatus || data.responseStatus === 200) && isUsable(translated)) return remember(translated);
     } catch { /* Try the fallback provider. */ }
     try {
       const data = await fetchJson<unknown>(
@@ -277,7 +294,7 @@ export default function Home() {
       );
       if (Array.isArray(data) && Array.isArray(data[0])) {
         const translated = data[0].map((part) => Array.isArray(part) ? String(part[0] ?? "") : "").join("").trim();
-        if (isUsable(translated)) return translated;
+        if (isUsable(translated)) return remember(translated);
       }
     } catch { /* Both public translation providers may be unavailable offline. */ }
     return "";
