@@ -378,8 +378,8 @@ export default function Home() {
         definitionTranslationPromise, exampleTranslationPromise,
         translateRelated(relatedSynonyms), translateRelated(relatedAntonyms)
       ]);
-      const finalDefinition = definition || "";
-      const finalExample = dictionaryExample || "";
+      const finalDefinition = definition || form.definition || "";
+      const finalExample = dictionaryExample || form.example || "";
       const enrichedFields = {
         meaning: translatedMeaning || (translatedDefinition ? translatedDefinition : form.meaning) || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
         definition: finalDefinition,
@@ -388,7 +388,7 @@ export default function Home() {
         synonyms: translatedSynonyms || form.synonyms,
         antonyms: translatedAntonyms || form.antonyms,
         level: estimateLevel(term),
-        category: inferCategory(term, definition)
+        category: inferCategory(term, definition || form.definition)
       };
       setForm(current => ({ ...current, ...enrichedFields }));
       try {
