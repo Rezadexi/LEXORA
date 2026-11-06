@@ -4,9 +4,17 @@
   "description": "سیستم شخصی یادگیری و مرور واژگان انگلیسی",
   "lang": "fa",
   "dir": "rtl",
-  "start_url": "/",
+  "start_url": "/LEXORA/",
+  "scope": "/LEXORA/",
   "display": "standalone",
   "background_color": "#090a0f",
   "theme_color": "#090a0f",
-  "icons": []
+  "icons": [
+    {
+      "src": "/LEXORA/lexora-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }
