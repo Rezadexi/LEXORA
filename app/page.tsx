@@ -578,10 +578,31 @@ export default function Home() {
       [selected[i], selected[j]] = [selected[j], selected[i]];
     }
     const optionsByQuestion = selected.map(question => {
-      const distractors = words.filter(w => w.id !== question.id).sort(() => Math.random() - 0.5).slice(0, 3);
-      const options = [...distractors];
-      const correctSlot = Math.floor(Math.random() * (options.length + 1));
-      options.splice(correctSlot, 0, question);
+      // Avoid duplicate choices that look identical to the learner.
+      const labelFor = (word: Word) => mode === "reverse" || mode === "cloze" ? word.word : word.meaning;
+      const correctLabel = normalizeWordKey(labelFor(question));
+      const candidates = words.filter(w =>
+        w.id !== question.id &&
+        normalizeWordKey(labelFor(w)) !== correctLabel &&
+        !!normalizeWordKey(labelFor(w))
+      );
+      // Fisher–Yates shuffle gives a fair random selection and answer position.
+      for (let i = candidates.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+      }
+      const seenLabels = new Set([correctLabel]);
+      const distractors = candidates.filter(w => {
+        const label = normalizeWordKey(labelFor(w));
+        if (seenLabels.has(label)) return false;
+        seenLabels.add(label);
+        return true;
+      }).slice(0, 3);
+      const options = [...distractors, question];
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
       return options;
     });
     setQuizOrder(selected); setQuizOptionsByQuestion(optionsByQuestion); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
