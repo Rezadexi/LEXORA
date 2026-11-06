@@ -164,7 +164,7 @@ export default function CollocationsPage() {
         <a className="brand coll-brand" href="/LEXORA/">
           <div className="brand-mark"><BookOpen size={22} strokeWidth={2.4}/></div>
           <div><div className="brand-name">LEXORA</div><div className="brand-sub">COLLOCATIONS & IDIOMS</div></div>
-        </Link>
+        </a>
         <div className="coll-top-actions">
           <a className="btn btn-small" href="/LEXORA/"><Home size={15}/> صفحهٔ واژگان من</a>
           <button className="btn btn-small" onClick={() => { setOnlyFavorites(v => !v); setMode("library"); }}><Heart size={15} fill={onlyFavorites ? "currentColor" : "none"}/>{onlyFavorites ? "همهٔ موارد" : "علاقه‌مندی‌ها"}</button>
