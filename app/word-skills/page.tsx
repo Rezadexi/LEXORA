@@ -296,7 +296,7 @@ export default function WordSkillsPage() {
       <div className="eyebrow">LESSON-BY-LESSON VOCABULARY</div>
       <h1>Word Skills <span>Elementary</span></h1>
       <p>واژه‌ها را درس‌به‌درس بخوان، مثال را بررسی کن و فقط کلماتی را که می‌خواهی با یک کلیک به بانک شخصی LEXORA اضافه کن.</p>
-      <div className="wordskills-notice">این صفحه با فهرست واقعی ویرایش دوم کتاب هماهنگ شده است. مثال‌ها و ترجمه‌ها برای تمرین، تازه و تألیفی هستند.</div>
+      <div className="wordskills-notice">این صفحه یک مجموعهٔ تکمیلی برای تمرین واژگان است. برای تطبیق کامل با تمام واژه‌های برجستهٔ کتاب، هر درس باید جداگانه از روی صفحات بررسی شود. مثال‌ها و ترجمه‌ها برای تمرین، تازه و تألیفی هستند.</div>
       <div className="wordskills-stats"><div><strong>{lessons.length}</strong><span>درس موضوعی</span></div><div><strong>{lessons.reduce((n,l)=>n+l.words.length,0)}</strong><span>واژهٔ تکمیلی</span></div><div><strong>{bankWords.length}</strong><span>واژه در بانک فعلی</span></div></div>
     </section>
     <section className="wordskills-layout">
