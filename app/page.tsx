@@ -336,7 +336,18 @@ export default function Home() {
       if (cached?.definition && cached?.meaning
         && relatedTranslationsComplete(cached.synonyms)
         && relatedTranslationsComplete(cached.antonyms)) {
-        setForm(current => ({ ...current, ...cached, word: term }));
+        setForm(current => ({
+          ...current,
+          word: term,
+          meaning: current.meaning || cached.meaning || "",
+          category: current.category !== "Daily English" ? current.category : (cached.category || current.category),
+          level: current.level !== "نامشخص" ? current.level : (cached.level || current.level),
+          definition: current.definition || cached.definition || "",
+          example: current.example || cached.example || "",
+          exampleFa: current.exampleFa || cached.exampleFa || "",
+          synonyms: current.synonyms || cached.synonyms || "",
+          antonyms: current.antonyms || cached.antonyms || ""
+        }));
         setEnrichMessage("اطلاعات ذخیره‌شده فوراً بارگذاری شد.");
         return;
       }
@@ -387,8 +398,8 @@ export default function Home() {
         exampleFa: translatedExample || form.exampleFa || "",
         synonyms: translatedSynonyms || form.synonyms,
         antonyms: translatedAntonyms || form.antonyms,
-        level: estimateLevel(term),
-        category: inferCategory(term, definition || form.definition)
+        level: form.level !== "نامشخص" ? form.level : estimateLevel(term),
+        category: form.category !== "Daily English" ? form.category : inferCategory(term, definition || form.definition)
       };
       setForm(current => ({ ...current, ...enrichedFields }));
       try {
