@@ -506,19 +506,14 @@ export default function Home() {
 
   function importBulkWords() {
     // Support both one-record-per-line formats and alternating word/meaning lines.
-    const rawLines = bulkText
-      .replace(/\\r\\n?/g, "\\n")
-      .split("\\n")
-      .map(line => line.trim())
-      .filter(Boolean);
+    const rawLines = bulkText.replace(/\r\n?/g, "\n").split("\n").map(line => line.trim()).filter(Boolean);
     if (!rawLines.length) { setBulkMessage("اول فهرست واژه‌ها را وارد کن."); return; }
 
-    const hasPersian = (value: string) => /[\\u0600-\\u06FF]/.test(value);
+    const hasPersian = (value: string) => /[\u0600-\u06FF]/.test(value);
     const parseInline = (line: string) => {
-      const parts = line.split(/\\s*(?:\\||\\t|;|؛|—|–)\\s*/);
+      const parts = line.split(/\s*(?:\||\t|;|؛|—|–)\s*/);
       if (parts.length > 1) return { term: parts.shift()!.trim(), meaning: parts.join(" — ").trim() };
-      // Also accept "word: معنی" and "word - معنی" when the second part contains Persian.
-      const match = line.match(/^([A-Za-z][A-Za-z' -]*?)\\s*[:：-]\\s*(.+)$/);
+      const match = line.match(/^([A-Za-z][A-Za-z' -]*?)\s*[:：-]\s*(.+)$/);
       if (match && hasPersian(match[2])) return { term: match[1].trim(), meaning: match[2].trim() };
       return { term: line.trim(), meaning: "" };
     };
@@ -527,13 +522,12 @@ export default function Home() {
     for (let i = 0; i < rawLines.length; i++) {
       const line = rawLines[i];
       if (hasPersian(line) && !/[A-Za-z]/.test(line)) {
-        // A Persian-only line is the meaning of the previous word if it has no meaning yet.
         const previous = records[records.length - 1];
         if (previous && !previous.meaning) previous.meaning = line;
         continue;
       }
       const parsed = parseInline(line);
-      const term = parsed.term.replace(/^[-•*\\d.)\\s]+/, "").trim();
+      const term = parsed.term.replace(/^[-•*\d.)\s]+/, "").trim();
       if (!term || !/[A-Za-z]/.test(term)) continue;
       if (!parsed.meaning && i + 1 < rawLines.length && hasPersian(rawLines[i + 1]) && !/[A-Za-z]/.test(rawLines[i + 1])) {
         parsed.meaning = rawLines[i + 1];
@@ -566,7 +560,7 @@ export default function Home() {
     }
     if (!additions.length) { setBulkMessage("واژهٔ تازه‌ای برای افزودن پیدا نشد؛ موارد تکراری یا نامعتبر نادیده گرفته شدند."); return; }
     setWords(current => [...additions, ...current]);
-    setBulkMessage(`${additions.length} واژه جداگانه اضافه شد؛ ${duplicates} مورد تکراری رد شد؛ ${withoutMeaning} واژه بدون معنی تشخیص داده شد.`);
+    setBulkMessage(\`\${additions.length} واژه جداگانه اضافه شد؛ \${duplicates} مورد تکراری رد شد؛ \${withoutMeaning} واژه بدون معنی تشخیص داده شد.\`);
     setBulkText("");
     setQuery("");
     setFilter("همه");
