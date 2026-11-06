@@ -85,9 +85,9 @@ function normalizeWordKey(value: string): string {
 }
 
 function clozeExample(example: string, word: string): string {
-  if (!example) return "I learned the word _____ while studying English.";
+  if (!example) return "";
   const index = example.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
-  if (index < 0) return "I learned the word _____ while studying English.";
+  if (index < 0) return "";
   return example.slice(0, index) + "_____" + example.slice(index + word.length);
 }
 
@@ -157,7 +157,12 @@ export default function Home() {
   const [quizAnswerOffset, setQuizAnswerOffset] = useState(0);
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizMode, setQuizMode] = useState<"smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze">("smart");
-  const [wrongIds, setWrongIds] = useState<string[]>([]);
+  const [wrongIds, setWrongIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { const saved = JSON.parse(localStorage.getItem("lexora.wrong-words.v1") || "[]"); return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : []; }
+    catch { return []; }
+  });
+  const [quizOptionsByQuestion, setQuizOptionsByQuestion] = useState<Word[][]>([]);
   const [enriching, setEnriching] = useState(false);
   const [enrichMessage, setEnrichMessage] = useState("");
   const [bulkText, setBulkText] = useState("");
@@ -185,6 +190,10 @@ export default function Home() {
   useEffect(() => {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
   }, [words, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) localStorage.setItem("lexora.wrong-words.v1", JSON.stringify(wrongIds));
+  }, [wrongIds, hydrated]);
 
   const filteredWords = useMemo(() => words.filter(w => {
     const matchesQuery = `${w.word} ${w.meaning} ${w.category} ${w.definition} ${w.example} ${w.synonyms} ${w.antonyms}`.toLowerCase().includes(query.toLowerCase().trim());
@@ -278,10 +287,8 @@ export default function Home() {
     const w = word.toLowerCase();
     const beginner = new Set(["able","about","above","after","again","all","also","always","answer","ask","back","beautiful","because","begin","big","book","bring","call","change","child","city","come","day","different","easy","eat","enough","every","family","feel","find","first","food","friend","good","great","happy","help","home","house","important","know","learn","life","like","little","long","look","make","many","more","most","need","new","nice","often","people","place","play","problem","read","right","same","school","small","start","study","take","thing","think","time","today","try","use","want","water","work","world","write"]);
     if (beginner.has(w)) return "A1";
-    if (w.length <= 4 && definition.length < 90) return "A2";
-    if (w.length <= 6 && definition.length < 130) return "B1";
-    if (w.length <= 9 && definition.length < 180) return "B2";
-    return "C1";
+    // Word length is not a reliable CEFR measure. Avoid presenting a guess as a trustworthy level.
+    return "نامشخص";
   }
 
   function inferCategory(word: string, definition: string): string {
@@ -349,7 +356,7 @@ export default function Home() {
         translateRelated(relatedSynonyms), translateRelated(relatedAntonyms)
       ]);
       const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "Definition unavailable from the dictionary.");
-      const finalExample = dictionaryExample || "I learned the word " + term + " while studying English.";
+      const finalExample = dictionaryExample || "";
       const enrichedFields = {
         meaning: translatedMeaning || (translatedDefinition ? translatedDefinition : form.meaning) || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
         definition: finalDefinition,
@@ -513,12 +520,12 @@ export default function Home() {
   function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze") {
     if (!mode) { setQuizStarted(false); setQuizDone(false); setModal("quiz"); return; }
     setQuizMode(mode);
-    const pool = words.filter(w => mode === "general" || mode === "reverse" || mode === "cloze" || (mode === "wrong"
+    const pool = words.filter(w => (mode === "cloze" ? !!clozeExample(w.example, w.word) : true) && (mode === "general" || mode === "reverse" || mode === "cloze" || (mode === "wrong"
       ? wrongIds.includes(w.id)
       : mode === "due" ? (w.nextReviewAt ?? 0) <= Date.now()
       : mode === "specialist" ? ((w.correctStreak ?? 0) < 5 && (w.reviews === 0 || w.correct < w.reviews))
-      : (w.correctStreak ?? 0) < 5));
-    if (pool.length < (mode === "due" ? 1 : 2)) { alert(mode === "wrong" ? "برای آزمون غلط‌ها، حداقل دو واژه غلط لازم است." : mode === "due" ? "فعلاً واژه‌ای برای مرور موعددار نداری؛ عالیه!" : "برای این نوع آزمون حداقل دو واژه لازم است."); return; }
+      : (w.correctStreak ?? 0) < 5)));
+    if (pool.length < (mode === "due" || mode === "wrong" ? 1 : 2)) { alert(mode === "wrong" ? "فعلاً واژهٔ ثبت‌شده‌ای برای مرور غلط‌ها نداری." : mode === "due" ? "فعلاً واژه‌ای برای مرور موعددار نداری؛ عالیه!" : mode === "cloze" ? "واژهٔ کافی با مثال قابل تمرین در بانک وجود ندارد." : "برای این نوع آزمون حداقل دو واژه لازم است."); return; }
     const priority = [...pool].sort((a, b) => {
       const streakA = a.correctStreak ?? 0, streakB = b.correctStreak ?? 0;
       const rateA = a.reviews ? a.correct / a.reviews : 0, rateB = b.reviews ? b.correct / b.reviews : 0;
@@ -532,28 +539,20 @@ export default function Home() {
       const j = Math.floor(Math.random() * (i + 1));
       [selected[i], selected[j]] = [selected[j], selected[i]];
     }
-    const selectedIds = new Set(selected.map(w => w.id));
-    setQuizOrder(selected); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
-    setQuizAnswerOffset(Math.floor(Math.random() * 4));
-    setQuizScore(0); setQuizDone(false); setQuizStarted(true);
-    setWrongIds(mode === "wrong" ? wrongIds.filter(id => !selectedIds.has(id)) : []); setModal("quiz");
+    const optionsByQuestion = selected.map(question => {
+      const distractors = words.filter(w => w.id !== question.id).sort(() => Math.random() - 0.5).slice(0, 3);
+      const options = [...distractors];
+      const correctSlot = Math.floor(Math.random() * (options.length + 1));
+      options.splice(correctSlot, 0, question);
+      return options;
+    });
+    setQuizOrder(selected); setQuizOptionsByQuestion(optionsByQuestion); setQuizTotal(size); setQuizIndex(0); setQuizChoice(null);
+    setQuizAnswerOffset(0);
+    setQuizScore(0); setQuizDone(false); setQuizStarted(true); setModal("quiz");
   }
 
   const quizWord = quizOrder.length ? quizOrder[quizIndex % quizOrder.length] : null;
-  const quizOptions = useMemo(() => {
-    if (!quizWord) return [];
-    const pool = words.filter(w => w.id !== quizWord.id);
-    // Fisher–Yates gives distractors a fair shuffle; the correct answer rotates through positions.
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    const distractors = pool.slice(0, 3);
-    const options = [...distractors];
-    const correctSlot = (quizIndex + quizAnswerOffset) % (options.length + 1);
-    options.splice(correctSlot, 0, quizWord);
-    return options;
-  }, [quizWord, words, quizIndex, quizAnswerOffset]);
+  const quizOptions = quizOptionsByQuestion[quizIndex] ?? [];
 
   function answerQuiz(wordId: string) {
     if (!quizWord || quizChoice) return;
@@ -561,6 +560,7 @@ export default function Home() {
     const correct = wordId === quizWord.id;
     if (correct) setQuizScore(s => s + 1);
     if (!correct) setWrongIds(current => current.includes(quizWord.id) ? current : [...current, quizWord.id]);
+    else if (quizMode === "wrong") setWrongIds(current => current.filter(id => id !== quizWord.id));
     setWords(current => current.map(w => w.id === quizWord.id ? {
       ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0),
       correctStreak: correct ? (w.correctStreak ?? 0) + 1 : 0,
@@ -609,9 +609,17 @@ export default function Home() {
         })).filter(item => item.word && item.meaning);
       if (!imported.length) throw new Error("empty");
       const restored = deduplicateWords(imported);
-      if (!confirm(`بازیابی پشتیبان شامل ${restored.length} واژه است. بانک فعلی این گوشی با اطلاعات فایل جایگزین می‌شود. قبل از ادامه مطمئن شو فایل از گوشی قبلی است. ادامه می‌دهی؟`)) return;
-      setWords(restored);
-      alert(`بازیابی انجام شد؛ ${restored.length} واژه وارد بانک شد.`);
+      const replaceAll = confirm(`فایل پشتیبان ${restored.length} واژه دارد.\n\nOK = جایگزینی کامل بانک فعلی (حذف داده‌های فعلی این دستگاه)\nCancel = رفتن به گزینهٔ ادغام با بانک فعلی`);
+      if (replaceAll) {
+        if (!confirm("هشدار نهایی: بانک فعلی با فایل جایگزین می‌شود. اگر پشتیبان داری، ادامه بده. مطمئنی؟")) return;
+        setWords(restored);
+        alert(`بازیابی کامل انجام شد؛ ${restored.length} واژه وارد بانک شد.`);
+      } else {
+        const merged = deduplicateWords([...words, ...restored]);
+        const added = merged.length - words.length;
+        setWords(merged);
+        alert(`ادغام انجام شد؛ ${Math.max(0, added)} واژهٔ جدید اضافه شد و موارد تکراری با بانک فعلی ادغام شدند.`);
+      }
     } catch {
       alert("فایل معتبر نیست. فایل پشتیبان JSON خروجی LEXORA را انتخاب کن.");
     } finally { e.target.value = ""; }
@@ -852,7 +860,7 @@ export default function Home() {
             <p className="muted" style={{ lineHeight: 1.8 }}>کلمه را وارد کن و دکمه زیر را بزن تا اطلاعات واژه به‌صورت خودکار دریافت شود. برای این قابلیت به اینترنت نیاز است.</p>
             <form onSubmit={saveWord}>
               <div className="form-grid">
-                <div className="form-field"><label>واژه انگلیسی *</label><div className="word-input-with-sound"><input className="field" value={form.word} required placeholder="e.g. thoughtful" onBlur={() => { if (form.word.trim() && !enriching) void enrichWord(); }} onChange={e => setForm(current => ({ ...current, word: e.target.value }))}/><button className="icon-btn" type="button" title="شنیدن تلفظ واژه" aria-label="شنیدن تلفظ واژه" onClick={() => form.word.trim() && speak(form.word.trim())}><Volume2 size={17}/></button><button className="icon-btn save-word-top" type="submit" title="ذخیره واژه" aria-label="ذخیره واژه"><Bookmark size={17}/></button></div></div>
+                <div className="form-field"><label>واژه انگلیسی *</label><div className="word-input-with-sound"><input className="field" value={form.word} required placeholder="e.g. thoughtful" onChange={e => setForm(current => ({ ...current, word: e.target.value }))}/><button className="icon-btn" type="button" title="شنیدن تلفظ واژه" aria-label="شنیدن تلفظ واژه" onClick={() => form.word.trim() && speak(form.word.trim())}><Volume2 size={17}/></button><button className="icon-btn save-word-top" type="submit" title="ذخیره واژه" aria-label="ذخیره واژه"><Bookmark size={17}/></button></div></div>
                 <div className="form-field"><label>معنی فارسی *</label>{input("meaning", "مثلاً باملاحظه، متفکر", true)}</div>
                 <div className="form-field"><label>سطح تقریبی</label><select className="field" value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}>{levels.map(l => <option key={l}>{l}</option>)}</select></div>
                 <div className="form-field"><label>دسته‌بندی</label><select className="field" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>{categories.map(c => <option key={c}>{c}</option>)}</select></div>
@@ -919,7 +927,7 @@ export default function Home() {
                   <h4 style={{ margin: "0 0 8px", color: "#6ee7c2" }}>تمرین تخصصی</h4>
                   <div className="quiz-options">
                     <button className="quiz-option" onClick={() => startQuiz("specialist")}>آزمون تخصصی <small>فقط واژه‌های جدید یا واژه‌هایی که قبلاً اشتباه زده‌ای</small></button>
-                    <button className="quiz-option" disabled={wrongIds.length < 2} onClick={() => startQuiz("wrong")}>مرور واژه‌های غلط ({wrongIds.length}) <small>فقط غلط‌های ثبت‌شده در این نشست</small></button>
+                    <button className="quiz-option" disabled={wrongIds.length < 1} onClick={() => startQuiz("wrong")}>مرور واژه‌های غلط ({wrongIds.length}) <small>غلط‌های ثبت‌شده روی همین دستگاه</small></button>
                   </div>
                 </div>
               </div>
@@ -932,7 +940,7 @@ export default function Home() {
                 <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap", margin: "18px 0" }}>
                   <span className="level">درست: {quizScore}</span><span className="level">غلط: {wrongIds.length}</span><span className="level">تسلط کامل: {mastered} واژه</span>
                 </div>
-                {wrongIds.length >= 2 && <button className="btn" style={{ margin: "0 6px 10px" }} onClick={() => startQuiz("wrong")}>آزمون جداگانه واژه‌های غلط ({wrongIds.length})</button>}
+                {wrongIds.length >= 1 && <button className="btn" style={{ margin: "0 6px 10px" }} onClick={() => startQuiz("wrong")}>آزمون جداگانه واژه‌های غلط ({wrongIds.length})</button>}
                 <button className="btn btn-primary" onClick={() => startQuiz()}><RotateCcw size={16}/> انتخاب آزمون دیگر</button>
               </div>
             ) : quizStarted && quizWord ? (
