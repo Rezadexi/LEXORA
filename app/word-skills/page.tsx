@@ -43,23 +43,47 @@ const lessons: { id: number; title: string; topic: string; words: LessonWord[] }
     {word:"phrase",meaning:"عبارت؛ گروهی از کلمات",example:"On the way is a phrase.",exampleFa:"On the way یک عبارت است.",level:"A2"},
     {word:"sentence",meaning:"جمله",example:"An old woman walked slowly up the hill.",exampleFa:"یک زن سالخورده به‌آرامی از تپه بالا رفت.",level:"A1"}
   ]},
-  { id: 3, title: "درس 3", topic: "Using this book — روش استفاده از کتاب", words: [
-    {word:"unit",meaning:"درس",example:"Read this unit first.",exampleFa:"اول این درس را بخوان.",level:"A1"},
-{word:"exercise",meaning:"تمرین",example:"Finish the exercise.",exampleFa:"تمرین را تمام کن.",level:"A1"},
-{word:"example",meaning:"مثال",example:"Read the example.",exampleFa:"مثال را بخوان.",level:"A1"},
-{word:"answer key",meaning:"پاسخ‌نامه",example:"Check the answer key.",exampleFa:"پاسخ‌نامه را بررسی کن.",level:"A2"}
+  { id: 3, title: "درس 3", topic: "Using this book — کار با کتاب آموزشی", words: [
+    {word:"contents page",meaning:"صفحهٔ فهرست مطالب",example:"Check the contents page to find the unit.",exampleFa:"برای پیدا کردن درس، فهرست مطالب را بررسی کن.",level:"A2"},
+    {word:"chapter",meaning:"فصل",example:"This chapter has three sections.",exampleFa:"این فصل سه بخش دارد.",level:"A2"},
+    {word:"heading",meaning:"عنوان؛ تیتر",example:"Read the heading before the paragraph.",exampleFa:"پیش از پاراگراف عنوان را بخوان.",level:"A2"},
+    {word:"subheading",meaning:"عنوان فرعی",example:"The subheading explains the next section.",exampleFa:"عنوان فرعی بخش بعدی را توضیح می‌دهد.",level:"B1"},
+    {word:"glossary",meaning:"واژه‌نامه",example:"Look in the glossary for unfamiliar terms.",exampleFa:"برای اصطلاحات ناآشنا به واژه‌نامه مراجعه کن.",level:"B1"},
+    {word:"index",meaning:"نمایه؛ فهرست الفبایی",example:"The index is at the back of the book.",exampleFa:"نمایه در انتهای کتاب است.",level:"B1"},
+    {word:"appendix",meaning:"پیوست",example:"Extra information is included in the appendix.",exampleFa:"اطلاعات اضافی در پیوست آمده است.",level:"B2"},
+    {word:"reference",meaning:"مرجع؛ منبع",example:"Use the dictionary as a reference.",exampleFa:"از فرهنگ لغت به‌عنوان مرجع استفاده کن.",level:"B1"},
+    {word:"abbreviation",meaning:"شکل کوتاه‌شده؛ مخفف",example:"Dr is an abbreviation of doctor.",exampleFa:"Dr مخفف doctor است.",level:"B1"},
+    {word:"symbol",meaning:"نماد؛ علامت",example:"This symbol means the same as.",exampleFa:"این نماد به معنی برابری است.",level:"A2"},
+    {word:"diagram",meaning:"نمودار؛ طرح توضیحی",example:"The diagram shows how the parts connect.",exampleFa:"نمودار نشان می‌دهد بخش‌ها چگونه به هم وصل می‌شوند.",level:"A2"},
+    {word:"footnote",meaning:"پانویس",example:"The footnote gives more detail.",exampleFa:"پانویس جزئیات بیشتری می‌دهد.",level:"B2"}
   ]},
-  { id: 4, title: "درس 4", topic: "Learning new words — یادگیری واژه‌های جدید", words: [
-    {word:"meaning",meaning:"معنی",example:"What is the meaning of this word?",exampleFa:"معنی این کلمه چیست؟",level:"A1"},
-{word:"pronunciation",meaning:"تلفظ",example:"Listen to the pronunciation.",exampleFa:"به تلفظ گوش بده.",level:"A2"},
-{word:"spell",meaning:"هجی کردن",example:"Can you spell your name?",exampleFa:"می‌توانی اسمت را هجی کنی؟",level:"A1"},
-{word:"review",meaning:"مرور کردن",example:"Review the words daily.",exampleFa:"هر روز واژه‌ها را مرور کن.",level:"A2"}
+  { id: 4, title: "درس 4", topic: "Learning new words — روش‌های یادگیری واژه", words: [
+    {word:"flashcard",meaning:"فلش‌کارت؛ کارت آموزشی",example:"I use a flashcard to practise each word.",exampleFa:"برای تمرین هر واژه از فلش‌کارت استفاده می‌کنم.",level:"A2"},
+    {word:"memorize",meaning:"حفظ کردن",example:"Try to memorize the phrase in context.",exampleFa:"سعی کن عبارت را در بافت جمله حفظ کنی.",level:"A2"},
+    {word:"recall",meaning:"به یاد آوردن",example:"I can recall the word without looking.",exampleFa:"می‌توانم بدون نگاه کردن واژه را به یاد بیاورم.",level:"B1"},
+    {word:"associate",meaning:"مرتبط کردن؛ تداعی کردن",example:"Associate the word with a picture.",exampleFa:"واژه را به یک تصویر مرتبط کن.",level:"B1"},
+    {word:"mnemonic",meaning:"روش یادسپاری؛ یادآور",example:"A mnemonic can help you remember spelling.",exampleFa:"یک روش یادسپاری می‌تواند به خاطر سپردن املا کمک کند.",level:"B2"},
+    {word:"retention",meaning:"ماندگاری در حافظه",example:"Short reviews improve vocabulary retention.",exampleFa:"مرورهای کوتاه ماندگاری واژگان در حافظه را بهتر می‌کنند.",level:"B2"},
+    {word:"cue",meaning:"نشانه؛ سرنخ",example:"The first letter is a useful cue.",exampleFa:"حرف اول سرنخ مفیدی است.",level:"B1"},
+    {word:"context clue",meaning:"سرنخ بافتی",example:"Use a context clue to guess the meaning.",exampleFa:"برای حدس معنی از سرنخ بافتی استفاده کن.",level:"B1"},
+    {word:"note-taking",meaning:"یادداشت‌برداری",example:"Good note-taking helps me study later.",exampleFa:"یادداشت‌برداری خوب کمک می‌کند بعداً درس بخوانم.",level:"B1"},
+    {word:"spaced practice",meaning:"تمرین با فاصلهٔ زمانی",example:"Spaced practice is better than one long session.",exampleFa:"تمرین با فاصلهٔ زمانی از یک جلسهٔ طولانی بهتر است.",level:"B2"},
+    {word:"self-test",meaning:"خودآزمایی",example:"I do a self-test at the end of the week.",exampleFa:"پایان هفته از خودم آزمون می‌گیرم.",level:"A2"},
+    {word:"learning strategy",meaning:"راهبرد یادگیری",example:"Choose a learning strategy that suits you.",exampleFa:"راهبرد یادگیری متناسب با خودت را انتخاب کن.",level:"B1"}
   ]},
   { id: 5, title: "درس 5", topic: "Classroom activities — فعالیت‌های کلاسی", words: [
-    {word:"repeat",meaning:"تکرار کردن",example:"Repeat after me.",exampleFa:"بعد از من تکرار کن.",level:"A1"},
-{word:"compare",meaning:"مقایسه کردن",example:"Compare your answers.",exampleFa:"پاسخ‌هایت را مقایسه کن.",level:"A2"},
-{word:"guess",meaning:"حدس زدن",example:"Guess the meaning.",exampleFa:"معنی را حدس بزن.",level:"A1"},
-{word:"instructions",meaning:"دستورالعمل‌ها",example:"Read the instructions.",exampleFa:"دستورالعمل‌ها را بخوان.",level:"A2"}
+    {word:"brainstorm",meaning:"بارش فکری؛ ایده‌پردازی گروهی",example:"Let's brainstorm ideas for the project.",exampleFa:"بیایید برای پروژه ایده‌پردازی کنیم.",level:"B1"},
+    {word:"pair work",meaning:"کار دونفره",example:"We practise speaking in pair work.",exampleFa:"در فعالیت دونفره مکالمه تمرین می‌کنیم.",level:"A2"},
+    {word:"group work",meaning:"کار گروهی",example:"Group work helps us share ideas.",exampleFa:"کار گروهی کمک می‌کند ایده‌ها را به اشتراک بگذاریم.",level:"A2"},
+    {word:"role-play",meaning:"اجرای نقش؛ ایفای نقش",example:"We did a role-play at the café.",exampleFa:"در کافه یک نمایش نقش‌آفرینی انجام دادیم.",level:"B1"},
+    {word:"presentation",meaning:"ارائه",example:"Each student gives a short presentation.",exampleFa:"هر دانش‌آموز یک ارائهٔ کوتاه انجام می‌دهد.",level:"A2"},
+    {word:"feedback",meaning:"بازخورد",example:"The teacher gave me helpful feedback.",exampleFa:"معلم بازخورد مفیدی به من داد.",level:"B1"},
+    {word:"participate",meaning:"شرکت کردن؛ مشارکت داشتن",example:"Everyone should participate in the activity.",exampleFa:"همه باید در فعالیت شرکت کنند.",level:"B1"},
+    {word:"summarize",meaning:"خلاصه کردن",example:"Summarize the main idea in two sentences.",exampleFa:"ایدهٔ اصلی را در دو جمله خلاصه کن.",level:"B1"},
+    {word:"submit",meaning:"تحویل دادن؛ ارسال کردن",example:"Please submit your assignment on Friday.",exampleFa:"لطفاً تکلیفت را جمعه تحویل بده.",level:"B1"},
+    {word:"collaborate",meaning:"همکاری کردن",example:"Students collaborate on the final task.",exampleFa:"دانش‌آموزان روی تکلیف پایانی همکاری می‌کنند.",level:"B1"},
+    {word:"peer review",meaning:"بازبینی همتا؛ بررسی کار هم‌کلاسی",example:"We use peer review to improve our writing.",exampleFa:"برای بهتر کردن نوشته‌ها از بازبینی همتا استفاده می‌کنیم.",level:"B2"},
+    {word:"take turns",meaning:"به نوبت انجام دادن",example:"Take turns asking and answering questions.",exampleFa:"به نوبت سؤال بپرسید و پاسخ دهید.",level:"A2"}
   ]},
   { id: 6, title: "درس 6", topic: "Numbers — اعداد", words: [
     {word:"zero",meaning:"صفر",example:"The answer is zero.",exampleFa:"پاسخ صفر است.",level:"A1"},
