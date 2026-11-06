@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "LEXORA — واژگان شخصی تو",
   description: "سیستم شخصی یادگیری و مرور واژگان انگلیسی",
   applicationName: "LEXORA",
-  manifest: "/manifest.json",
+  manifest: "/LEXORA/manifest.json",
 };
 
 export const viewport: Viewport = {
