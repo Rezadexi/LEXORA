@@ -223,7 +223,7 @@ export default function Home() {
     const today = todayStart.getTime();
     for (const word of words) {
       if ((word.correctStreak ?? 0) >= 5) masteredCount++;
-      if ((word.nextReviewAt ?? 0) <= now) due.push(word);
+      if (typeof word.nextReviewAt === "number" && word.nextReviewAt <= now) due.push(word);
       if (typeof word.lastReviewedAt === "number" && word.lastReviewedAt >= today) reviewedTodayCount++;
       if (word.reviews > 0 && word.correct / Math.max(1, word.reviews) < 0.6) weak.push(word);
     }
@@ -481,14 +481,14 @@ export default function Home() {
   function startAcademy() {
     if (!words.length) { alert("اول چند واژه به بانک اضافه کن تا آکادمی بتواند به تو آموزش بدهد."); return; }
     const now = Date.now();
-    const due = words.filter(w => (w.academyNextReviewAt ?? 0) <= now);
-    const candidates = due.length ? due : words.filter(w => (w.academyCorrectStreak ?? 0) < 5);
+    const due = words.filter(w => typeof w.academyNextReviewAt === "number" && w.academyNextReviewAt <= now);
+    const candidates = due.length ? due : words.filter(w => (w.correctStreak ?? 0) < 5);
     const ranked = [...(candidates.length ? candidates : words)].sort((a, b) => {
       const aNew = (a.academySeen ?? 0) === 0 ? 0 : 1;
       const bNew = (b.academySeen ?? 0) === 0 ? 0 : 1;
       if (aNew !== bNew) return aNew - bNew;
-      const aStreak = a.academyCorrectStreak ?? 0;
-      const bStreak = b.academyCorrectStreak ?? 0;
+      const aStreak = a.correctStreak ?? 0;
+      const bStreak = b.correctStreak ?? 0;
       if (aStreak !== bStreak) return aStreak - bStreak;
       const aRate = a.reviews ? a.correct / a.reviews : 0;
       const bRate = b.reviews ? b.correct / b.reviews : 0;
@@ -543,8 +543,8 @@ export default function Home() {
     setQuizMode(mode);
     const pool = words.filter(w => (mode === "cloze" ? !!clozeExample(w.example, w.word) : true) && (mode === "general" || mode === "reverse" || mode === "cloze" || (mode === "wrong"
       ? wrongIds.includes(w.id)
-      : mode === "due" ? (w.nextReviewAt ?? 0) <= Date.now()
-      : mode === "specialist" ? ((w.correctStreak ?? 0) < 5 && (w.reviews === 0 || w.correct < w.reviews))
+      : mode === "due" ? (typeof w.nextReviewAt === "number" && w.nextReviewAt <= Date.now())
+      : mode === "specialist" ? ((w.correctStreak ?? 0) < 5)
       : (w.correctStreak ?? 0) < 5)));
     if (pool.length < (mode === "due" || mode === "wrong" ? 1 : 2)) { alert(mode === "wrong" ? "فعلاً واژهٔ ثبت‌شده‌ای برای مرور غلط‌ها نداری." : mode === "due" ? "فعلاً واژه‌ای برای مرور موعددار نداری؛ عالیه!" : mode === "cloze" ? "واژهٔ کافی با مثال قابل تمرین در بانک وجود ندارد." : "برای این نوع آزمون حداقل دو واژه لازم است."); return; }
     const priority = [...pool].sort((a, b) => {
