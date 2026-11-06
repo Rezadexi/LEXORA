@@ -273,7 +273,7 @@ export default function Home() {
     try {
       const data = await fetchJson<unknown>(
         `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fa&dt=t&q=${encodeURIComponent(source)}`,
-        Math.max(timeoutMs, 2600)
+        Math.max(timeoutMs, 1500)
       );
       if (Array.isArray(data) && Array.isArray(data[0])) {
         const translated = data[0].map((part) => Array.isArray(part) ? String(part[0] ?? "") : "").join("").trim();
@@ -345,17 +345,17 @@ export default function Home() {
       ])].filter(Boolean).slice(0, 2);
 
       // Translate the headword, definition, example, synonyms and antonyms; each related word gets its own Persian meaning.
-      const definitionTranslationPromise = definition ? translateToPersian(definition, 4200) : Promise.resolve("");
-      const exampleTranslationPromise = dictionaryExample ? translateToPersian(dictionaryExample, 4200) : Promise.resolve("");
+      const definitionTranslationPromise = definition ? translateToPersian(definition, 1800) : Promise.resolve("");
+      const exampleTranslationPromise = dictionaryExample ? translateToPersian(dictionaryExample, 1800) : Promise.resolve("");
       const translateRelated = async (items: string[]) => {
-        const pairs = await Promise.all(items.map(async word => ({ word, meaning: await translateToPersian(word, 3200) })));
+        const pairs = await Promise.all(items.map(async word => ({ word, meaning: await translateToPersian(word, 1400) })));
         return pairs.map(item => item.word + " — " + (item.meaning || "ترجمه در دسترس نیست")).join(" || ");
       };
       const [translatedDefinition, translatedExample, translatedSynonyms, translatedAntonyms] = await Promise.all([
         definitionTranslationPromise, exampleTranslationPromise,
         translateRelated(relatedSynonyms), translateRelated(relatedAntonyms)
       ]);
-      const finalDefinition = definition || (translatedMeaning ? "Meaning in Persian: " + translatedMeaning : "Definition unavailable from the dictionary.");
+      const finalDefinition = definition || "";
       const finalExample = dictionaryExample || "";
       const enrichedFields = {
         meaning: translatedMeaning || (translatedDefinition ? translatedDefinition : form.meaning) || "ترجمه در دسترس نیست؛ معنی را بررسی کن",
@@ -376,7 +376,7 @@ export default function Home() {
       } catch { /* Caching is optional; the form must still work without storage. */ }
       const hasRemoteData = !!(definition || translatedMeaning || relatedSynonyms.length || relatedAntonyms.length);
       setEnrichMessage(hasRemoteData
-        ? "تکمیل سریع انجام شد؛ اگر معنی نامشخص است، آن را بررسی کن."
+        ? "اطلاعات موجود بارگذاری شد؛ سطح و ترجمه‌ها را بررسی کن، چون منابع رایگان ممکن است ناقص باشند."
         : "منابع آنلاین سریع پاسخ ندادند؛ فیلدهای جایگزین پر شدند. اتصال را بررسی کن.");
 
     } catch {
