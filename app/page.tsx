@@ -560,7 +560,7 @@ export default function Home() {
     }
     if (!additions.length) { setBulkMessage("واژهٔ تازه‌ای برای افزودن پیدا نشد؛ موارد تکراری یا نامعتبر نادیده گرفته شدند."); return; }
     setWords(current => [...additions, ...current]);
-    setBulkMessage(\`\${additions.length} واژه جداگانه اضافه شد؛ \${duplicates} مورد تکراری رد شد؛ \${withoutMeaning} واژه بدون معنی تشخیص داده شد.\`);
+    setBulkMessage(additions.length + " واژه جداگانه اضافه شد؛ " + duplicates + " مورد تکراری رد شد؛ " + withoutMeaning + " واژه بدون معنی تشخیص داده شد.");
     setBulkText("");
     setQuery("");
     setFilter("همه");
