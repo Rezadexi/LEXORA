@@ -441,8 +441,13 @@ export default function Home() {
   function saveWord(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.word.trim() || !form.meaning.trim()) return;
-    if (words.some(w => normalizeWordKey(w.word) === normalizeWordKey(form.word))) {
-      alert("این واژه از قبل در بانک وجود دارد. برای جلوگیری از تکرار، ذخیره نشد.");
+    const duplicateWord = words.find(w => normalizeWordKey(w.word) === normalizeWordKey(form.word));
+    if (duplicateWord) {
+      const openExisting = confirm("این واژه از قبل در بانک وجود دارد و ذخیرهٔ تکراری انجام نمی‌شود.\n\nمی‌خواهی جزئیات همان واژه را باز کنی تا اطلاعاتش را بررسی کنی؟");
+      if (openExisting) {
+        setSelected(duplicateWord);
+        setModal("detail");
+      }
       return;
     }
     const newWord: Word = {
