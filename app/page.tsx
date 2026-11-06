@@ -944,7 +944,7 @@ export default function Home() {
                     <div className="row-actions">
                       <button className="icon-btn" title="شنیدن تلفظ" onClick={() => speak(word.word)}><Volume2 size={16}/></button>
                       <button className="icon-btn" title="جزئیات" onClick={() => { setSelected(word); setModal("detail"); }}><ChevronLeft size={17}/></button>
-                      {!word.id.startsWith("demo-") && <button className="icon-btn" title="حذف" onClick={() => deleteWord(word.id)}><Trash2 size={15}/></button>}
+                      <button className="icon-btn" title="حذف" onClick={() => deleteWord(word.id)}><Trash2 size={15}/></button>
                     </div>
                   </div>)}
                 </div>}
