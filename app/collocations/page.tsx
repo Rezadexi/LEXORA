@@ -8,11 +8,11 @@ import { phrases, type Phrase, type PhraseType } from "./data";
 type Progress = { known: string[]; favorites: string[]; seen: Record<string, number>; correct: Record<string, number> };
 const STORAGE_KEY = "lexora.collocations.v1";
 const emptyProgress: Progress = { known: [], favorites: [], seen: {}, correct: {} };
-const levels = ["همه سطح‌ها", "A2", "B1", "B2", "C1"];
+const levels = ["همه سطح‌ها", "A1", "A2", "B1", "B2", "C1"];
 const types = ["همه انواع", "Collocation", "Idiom", "Phrasal verb"];
 const categories = ["همه موضوع‌ها", ...Array.from(new Set(phrases.map(p => p.category))).sort()];
 const typeFa: Record<string, string> = { "Collocation": "هم‌آیند", "Idiom": "اصطلاح", "Phrasal verb": "فعل عبارتی" };
-const levelFa: Record<string, string> = { A2: "پایه", B1: "متوسط", B2: "متوسط رو به بالا", C1: "پیشرفته" };
+const levelFa: Record<string, string> = { A1: "مقدماتی", A2: "پایه", B1: "متوسط", B2: "متوسط رو به بالا", C1: "پیشرفته" };
 
 function shuffle<T,>(items: T[]): T[] {
   const result = [...items];
@@ -42,6 +42,8 @@ export default function CollocationsPage() {
   const [quizScore, setQuizScore] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
   const [quizOptions, setQuizOptions] = useState<Phrase[]>([]);
+  const [quizLimit, setQuizLimit] = useState("10");
+  const [quizWrongOnly, setQuizWrongOnly] = useState(false);
 
   useEffect(() => {
     try {
@@ -115,13 +117,17 @@ export default function CollocationsPage() {
     else setLearnIndex(i => i + 1);
   }
 
-  function startQuiz() {
-    if (filtered.length < 2) {
-      window.alert("برای آزمون باید حداقل دو عبارت با فیلترهای فعلی پیدا شود.");
+  function startQuiz(onlyWrong = false) {
+    const wrongIds = phrases.filter(p => (progress.seen[p.id] || 0) > (progress.correct[p.id] || 0)).map(p => p.id);
+    const pool = onlyWrong ? filtered.filter(p => wrongIds.includes(p.id)) : filtered;
+    if (pool.length < 2) {
+      window.alert(onlyWrong ? "برای مرور اشتباه‌ها، حداقل دو عبارت اشتباه‌زده‌شده در فیلتر فعلی لازم است." : "برای آزمون باید حداقل دو عبارت با فیلترهای فعلی پیدا شود.");
       return;
     }
-    const pool = filtered;
-    setQuizQueue(shuffle(pool).slice(0, Math.min(10, pool.length)));
+    const shuffled = shuffle(pool);
+    const count = quizLimit === "all" ? shuffled.length : Math.min(Number(quizLimit) || 10, shuffled.length);
+    setQuizWrongOnly(onlyWrong);
+    setQuizQueue(shuffled.slice(0, count));
     setQuizIndex(0); setQuizChoice(null); setQuizScore(0); setQuizDone(false); setMode("quiz");
   }
 
@@ -172,7 +178,7 @@ export default function CollocationsPage() {
           <p>کتابخانه‌ای مستقل برای هم‌آیندها، اصطلاحات و فعل‌های عبارتی؛ با معنی فارسی، تعریف روشن، مثال طبیعی، تلفظ، فیلتر سطح و تمرین بازیابی.</p>
           <div className="coll-hero-actions">
             <button className="btn btn-primary" onClick={startLearn}><GraduationCap size={17}/> شروع یادگیری <ArrowLeft size={15}/></button>
-            <button className="btn" onClick={startQuiz}><Brain size={17}/> آزمون از موارد فیلترشده</button>
+            <label className="quiz-length-control"><span>تعداد سؤال</span><select className="field" value={quizLimit} onChange={e => setQuizLimit(e.target.value)}><option value="10">۱۰ سؤال</option><option value="25">۲۵ سؤال</option><option value="50">۵۰ سؤال</option><option value="all">همهٔ موارد فیلترشده</option></select></label><button className="btn" onClick={() => startQuiz(false)}><Brain size={17}/> آزمون از موارد فیلترشده</button><button className="btn" onClick={() => startQuiz(true)}><RotateCcw size={16}/> مرور اشتباه‌ها</button>
           </div>
           <div className="coll-source-note"><Sparkles size={14}/> محتوای منتخب و مثال‌های آموزشی اختصاصی؛ مناسب تمرین روزانه</div>
         </div>
@@ -248,8 +254,8 @@ export default function CollocationsPage() {
       {mode === "quiz" && <section className="panel coll-session">
         <div className="coll-session-head"><button className="icon-btn" aria-label="بازگشت به کتابخانه" onClick={() => setMode("library")}><X size={18}/></button><span>آزمون عبارت‌ها</span>{!quizDone && <span>{quizIndex + 1} از {quizQueue.length}</span>}</div>
         {!quizDone && <div className="progress-track"><div className="progress-fill" style={{width:`${((quizIndex + (quizChoice ? 1 : 0)) / Math.max(1, quizQueue.length)) * 100}%`}}/></div>}
-        {quizDone ? <div className="coll-quiz-result"><div className="academy-orb"><GraduationCap size={28}/></div><h2>آزمون تمام شد</h2><div className="goal-number">{quizScore} <span>/ {quizQueue.length}</span></div><p>درصد پاسخ درست: {Math.round(quizScore / Math.max(1, quizQueue.length) * 100)}٪</p><button className="btn btn-primary" onClick={startQuiz}><RotateCcw size={16}/> آزمون دوباره</button><button className="btn" onClick={() => setMode("library")}>بازگشت به کتابخانه</button></div> :
-        activeQuiz ? <div className="coll-quiz-body"><span className="coll-type">{typeFa[activeQuiz.type]} · {activeQuiz.level}</span><h2 dir="ltr">{activeQuiz.phrase}</h2><p>معنی درست این عبارت کدام است؟</p><div className="coll-quiz-options">{quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice === option.id && quizChoice === activeQuiz.id ? "correct" : ""} ${quizChoice === option.id && quizChoice !== activeQuiz.id ? "wrong" : ""} ${quizChoice && option.id === activeQuiz.id && quizChoice !== activeQuiz.id ? "answer-key" : ""}`} onClick={() => answerQuiz(option.id)}>{option.meaning}</button>)}</div>{quizChoice && <div className="notice">{quizChoice === activeQuiz.id ? "درست بود! عالی پیش می‌روی." : `پاسخ درست: ${activeQuiz.meaning}`}<p dir="ltr" style={{marginTop:8}}>{activeQuiz.example}</p><p className="coll-example-fa">{activeQuiz.exampleFa}</p><button className="btn btn-primary btn-small" onClick={nextQuiz}>{quizIndex + 1 >= quizQueue.length ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div>}</div> : <p>برای این فیلتر عبارت کافی نیست.</p>}
+        {quizDone ? <div className="coll-quiz-result"><div className="academy-orb"><GraduationCap size={28}/></div><h2>آزمون تمام شد</h2><div className="goal-number">{quizScore} <span>/ {quizQueue.length}</span></div><p>درصد پاسخ درست: {Math.round(quizScore / Math.max(1, quizQueue.length) * 100)}٪</p><button className="btn btn-primary" onClick={() => startQuiz(quizWrongOnly)}><RotateCcw size={16}/> آزمون دوباره</button>{phrases.some(p => (progress.seen[p.id] || 0) > (progress.correct[p.id] || 0)) && <button className="btn" onClick={() => startQuiz(true)}>مرور اشتباه‌ها</button>}<button className="btn" onClick={() => setMode("library")}>بازگشت به کتابخانه</button></div> :
+        activeQuiz ? <div className="coll-quiz-body"><span className="coll-type">{typeFa[activeQuiz.type]} · {activeQuiz.level}</span><h2 dir="ltr">{activeQuiz.phrase} <button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${activeQuiz.phrase}`} onClick={() => speak(activeQuiz.phrase)}><Volume2 size={17}/></button></h2><p>{quizWrongOnly ? "مرور عبارت‌هایی که قبلاً اشتباه پاسخ داده‌ای؛ معنی درست کدام است؟" : "معنی درست این عبارت کدام است؟"}</p><div className="coll-quiz-options">{quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice === option.id && quizChoice === activeQuiz.id ? "correct" : ""} ${quizChoice === option.id && quizChoice !== activeQuiz.id ? "wrong" : ""} ${quizChoice && option.id === activeQuiz.id && quizChoice !== activeQuiz.id ? "answer-key" : ""}`} onClick={() => answerQuiz(option.id)}>{option.meaning}</button>)}</div>{quizChoice && <div className="notice">{quizChoice === activeQuiz.id ? "درست بود! عالی پیش می‌روی." : `پاسخ درست: ${activeQuiz.meaning}`}<p dir="ltr" style={{marginTop:8}}>{activeQuiz.example}</p><p className="coll-example-fa">{activeQuiz.exampleFa}</p><button className="btn btn-primary btn-small" onClick={nextQuiz}>{quizIndex + 1 >= quizQueue.length ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div>}</div> : <p>برای این فیلتر عبارت کافی نیست.</p>}
       </section>}
 
       <section className="coll-source-panel panel">
