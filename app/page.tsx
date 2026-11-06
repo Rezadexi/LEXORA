@@ -283,7 +283,7 @@ export default function Home() {
     return "";
   }
 
-  function estimateLevel(word: string, definition: string): string {
+  function estimateLevel(word: string): string {
     const w = word.toLowerCase();
     const beginner = new Set(["able","about","above","after","again","all","also","always","answer","ask","back","beautiful","because","begin","big","book","bring","call","change","child","city","come","day","different","easy","eat","enough","every","family","feel","find","first","food","friend","good","great","happy","help","home","house","important","know","learn","life","like","little","long","look","make","many","more","most","need","new","nice","often","people","place","play","problem","read","right","same","school","small","start","study","take","thing","think","time","today","try","use","want","water","work","world","write"]);
     if (beginner.has(w)) return "A1";
@@ -364,7 +364,7 @@ export default function Home() {
         exampleFa: translatedExample || form.exampleFa || "",
         synonyms: translatedSynonyms || form.synonyms,
         antonyms: translatedAntonyms || form.antonyms,
-        level: estimateLevel(term, definition || term),
+        level: estimateLevel(term),
         category: inferCategory(term, definition)
       };
       setForm(current => ({ ...current, ...enrichedFields }));
@@ -410,7 +410,7 @@ export default function Home() {
         const [relatedWord, relatedMeaning] = item.split(" — ");
         return {
           id: crypto.randomUUID(), word: relatedWord.trim(), meaning: (relatedMeaning || "معنی وارد نشده").trim(),
-          category: newWord.category, level: estimateLevel(relatedWord.trim(), relatedWord.trim()),
+          category: newWord.category, level: estimateLevel(relatedWord.trim()),
           definition: "", example: "", exampleFa: "", synonyms: "", antonyms: "",
           createdAt: Date.now(), correct: 0, reviews: 0
         };
@@ -581,7 +581,7 @@ export default function Home() {
     const correct = wordId === quizWord.id;
     if (correct) setQuizScore(s => s + 1);
     if (!correct) setWrongIds(current => current.includes(quizWord.id) ? current : [...current, quizWord.id]);
-    else if (quizMode === "wrong") setWrongIds(current => current.filter(id => id !== quizWord.id));
+    else setWrongIds(current => current.filter(id => id !== quizWord.id));
     setWords(current => current.map(w => w.id === quizWord.id ? {
       ...w, reviews: w.reviews + 1, correct: w.correct + (correct ? 1 : 0),
       correctStreak: correct ? (w.correctStreak ?? 0) + 1 : 0,
