@@ -285,6 +285,36 @@ export default function WordSkillsPage() {
       window.alert("بانک لغات در دسترس نیست. ابتدا سایت اصلی را باز کن و دوباره تلاش کن.");
     }
   }
+
+  function addAllLessonWords() {
+    try {
+      const raw = localStorage.getItem(BANK_KEY);
+      const current = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(current)) throw new Error("bad bank");
+      const existing = new Set(current.map((w: {word?: string}) => normalize(w.word || "")));
+      const now = Date.now();
+      const additions = activeLesson.words.filter(item => !existing.has(normalize(item.word))).map(item => {
+        const key = normalize(item.word);
+        existing.add(key);
+        return {
+          id: `word-skills-${key.replace(/[^a-z0-9]+/g, "-")}`,
+          word: item.word, meaning: item.meaning, category: "Word Skills", level: item.level,
+          definition: "", example: item.example, exampleFa: item.exampleFa, synonyms: "", antonyms: "",
+          createdAt: now, correct: 0, reviews: 0
+        };
+      });
+      if (additions.length) localStorage.setItem(BANK_KEY, JSON.stringify([...additions, ...current]));
+      const allWords = [...additions, ...current];
+      setBankWords(allWords.map((w: {word?: string}) => normalize(w.word || "")));
+      setAdded(prev => [...new Set([...prev, ...activeLesson.words.map(item => normalize(item.word))])]);
+      window.alert(additions.length
+        ? `${additions.length} واژه از ${activeLesson.title} اضافه شد.`
+        : "همهٔ واژه‌های این درس از قبل در بانک هستند.");
+    } catch {
+      window.alert("بانک لغات در دسترس نیست. ابتدا سایت اصلی را باز کن و دوباره تلاش کن.");
+    }
+  }
+
   const lessonAddedCount = activeLesson.words.filter(w => bankWords.includes(normalize(w.word))).length;
 
   return <main className="app-shell wordskills-page">
@@ -305,7 +335,7 @@ export default function WordSkillsPage() {
         <div className="wordskills-lesson-list">{lessons.map(lesson => <button key={lesson.id} className={lesson.id===lessonId?"wordskills-lesson active":"wordskills-lesson"} onClick={()=>{setLessonId(lesson.id);setQuery("");}}><span><strong>{lesson.title}</strong><small>{lesson.topic}</small></span><span className="wordskills-count">{lesson.words.length}</span></button>)}</div>
       </aside>
       <section className="panel wordskills-list">
-        <div className="wordskills-list-head"><div><div className="eyebrow">LESSON {activeLesson.id.toString().padStart(2,"0")}</div><h2>{activeLesson.title}: {activeLesson.topic}</h2><p>برای افزودن به بانک، روی دکمهٔ هر کلمه بزن.</p></div><div className="wordskills-progress">{lessonAddedCount} از {activeLesson.words.length}<small>در بانک تو</small></div></div>
+        <div className="wordskills-list-head"><div><div className="eyebrow">LESSON {activeLesson.id.toString().padStart(2,"0")}</div><h2>{activeLesson.title}: {activeLesson.topic}</h2><p>برای افزودن به بانک، روی دکمهٔ هر کلمه بزن.</p></div><div className="wordskills-progress">{lessonAddedCount} از {activeLesson.words.length}<small>در بانک تو</small><button className="btn btn-small btn-primary" onClick={addAllLessonWords} disabled={lessonAddedCount === activeLesson.words.length} style={{marginTop:8}}>افزودن کل درس</button></div></div>
         <label className="wordskills-search"><Search size={17}/><input className="field" value={query} onChange={e=>setQuery(e.target.value)} placeholder="جست‌وجوی واژه یا معنی…"/></label>
         <div className="wordskills-word-list">{visibleWords.map(item=>{const key=normalize(item.word);const isAdded=bankWords.includes(key);return <article className="wordskills-word" key={key}>
           <div className="wordskills-word-main"><div className="wordskills-word-heading"><h3 dir="ltr">{item.word}</h3><button className="icon-btn" title="شنیدن تلفظ" aria-label={"شنیدن "+item.word} onClick={()=>{if("speechSynthesis" in window){const u=new SpeechSynthesisUtterance(item.word);u.lang="en-US";window.speechSynthesis.speak(u);}}}><Volume2 size={16}/></button><span className="level">{item.level}</span></div><div className="wordskills-meaning">{item.meaning}</div><p className="wordskills-example" dir="ltr">{item.example}</p><p className="wordskills-example-fa">{item.exampleFa}</p></div>
