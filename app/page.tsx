@@ -642,6 +642,7 @@ export default function Home() {
         words,
         wrongWordIds: wrongIds,
         enrichCache: readStoredJson(ENRICH_CACHE_KEY),
+        translationCache: readStoredJson(TRANSLATION_CACHE_KEY),
         collocationsProgress: readStoredJson("lexora.collocations.v1")
       }
     }, "lexora-full-backup.json");
@@ -657,7 +658,7 @@ export default function Home() {
         && (parsed as { version?: unknown }).version === 1
         && !!(parsed as { data?: unknown }).data
         && typeof (parsed as { data?: unknown }).data === "object";
-      const backupData = isFullBackup ? (parsed as { data: { words?: unknown; wrongWordIds?: unknown; enrichCache?: unknown; collocationsProgress?: unknown } }).data : null;
+      const backupData = isFullBackup ? (parsed as { data: { words?: unknown; wrongWordIds?: unknown; enrichCache?: unknown; translationCache?: unknown; collocationsProgress?: unknown } }).data : null;
       const sourceWords = isFullBackup ? backupData?.words : parsed;
       if (!Array.isArray(sourceWords)) throw new Error("format");
       const imported: Word[] = sourceWords.filter((item): item is Word => !!item && typeof item === "object" && typeof (item as Word).word === "string" && typeof (item as Word).meaning === "string")
@@ -691,6 +692,9 @@ export default function Home() {
           }
           if (backupData.enrichCache !== undefined) {
             try { localStorage.setItem(ENRICH_CACHE_KEY, JSON.stringify(backupData.enrichCache)); } catch {}
+          }
+          if (backupData.translationCache !== undefined) {
+            try { localStorage.setItem(TRANSLATION_CACHE_KEY, JSON.stringify(backupData.translationCache)); } catch {}
           }
           if (backupData.collocationsProgress !== undefined && backupData.collocationsProgress !== null) {
             try { localStorage.setItem("lexora.collocations.v1", JSON.stringify(backupData.collocationsProgress)); } catch {}
