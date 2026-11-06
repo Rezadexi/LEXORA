@@ -196,7 +196,7 @@ export default function Home() {
   }, [wrongIds, hydrated]);
 
   const filteredWords = useMemo(() => words.filter(w => {
-    const matchesQuery = `${w.word} ${w.meaning} ${w.category} ${w.definition} ${w.example} ${w.synonyms} ${w.antonyms}`.toLowerCase().includes(query.toLowerCase().trim());
+    const matchesQuery = `${w.word} ${w.meaning} ${w.category} ${w.definition} ${w.example} ${w.exampleFa} ${w.synonyms} ${w.antonyms}`.toLowerCase().includes(query.toLowerCase().trim());
     const matchesFilter = filter === "همه" || w.level === filter || w.category === filter;
     return matchesQuery && matchesFilter;
   }), [words, query, filter]);
