@@ -76,7 +76,7 @@ export default function StudyWorkspacePage() {
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) { setMessage("متن انگلیسی در کلیپ‌بورد پیدا نشد. ابتدا از PDF یا ابزار تشخیص متن عکس، متن را کپی کن."); return; }
-      setSourceText(current => current.trim() ? current + "\\n" + text.trim() : text.trim());
+      setSourceText(current => current.trim() ? current + "\n" + text.trim() : text.trim());
       setMessage("متن کلیپ‌بورد به کادر اضافه شد؛ حالا می‌توانی نامزدهای واژگان را استخراج کنی.");
     } catch {
       setMessage("دسترسی به کلیپ‌بورد رد شد. متن را کپی کن و داخل کادر نگه‌دار و Paste را بزن.");
