@@ -607,11 +607,16 @@ export default function Home() {
   function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze") {
     if (!mode) { setQuizStarted(false); setQuizDone(false); setModal("quiz"); return; }
     setQuizMode(mode);
-    const pool = words.filter(w => (mode === "cloze" ? !!clozeExample(w.example, w.word) : true) && (mode === "general" || mode === "reverse" || mode === "cloze" || (mode === "wrong"
-      ? wrongIds.includes(w.id)
-      : mode === "due" ? (typeof w.nextReviewAt === "number" && w.nextReviewAt <= Date.now())
-      : mode === "specialist" ? ((w.correctStreak ?? 0) < 5)
-      : (w.correctStreak ?? 0) < 5)));
+    const pool = words.filter(w => {
+      // A question must have the information needed to show both the prompt and its answer.
+      if (mode === "reverse") return !!w.word.trim() && !!w.meaning.trim();
+      if (mode === "cloze") return !!w.word.trim() && !!clozeExample(w.example, w.word);
+      if (!w.word.trim() || !w.meaning.trim()) return false;
+      if (mode === "general") return true;
+      if (mode === "wrong") return wrongIds.includes(w.id);
+      if (mode === "due") return typeof w.nextReviewAt === "number" && w.nextReviewAt <= Date.now();
+      return (w.correctStreak ?? 0) < 5;
+    });
     if (pool.length < (mode === "due" || mode === "wrong" ? 1 : 2)) { alert(mode === "wrong" ? "فعلاً واژهٔ ثبت‌شده‌ای برای مرور غلط‌ها نداری." : mode === "due" ? "فعلاً واژه‌ای برای مرور موعددار نداری؛ عالیه!" : mode === "cloze" ? "واژهٔ کافی با مثال قابل تمرین در بانک وجود ندارد." : "برای این نوع آزمون حداقل دو واژه لازم است."); return; }
     const priority = [...pool].sort((a, b) => {
       const streakA = a.correctStreak ?? 0, streakB = b.correctStreak ?? 0;
@@ -1153,7 +1158,7 @@ export default function Home() {
                 <div className="quiz-options">
                   {quizOptions.map(option => <button key={option.id} disabled={!!quizChoice} className={`quiz-option ${quizChoice === option.id && quizChoice === quizWord.id ? "correct" : ""} ${quizChoice === option.id && quizChoice !== quizWord.id ? "wrong" : ""} ${quizChoice && option.id === quizWord.id && quizChoice !== quizWord.id ? "answer-key" : ""}`} onClick={() => answerQuiz(option.id)}>{quizMode === "reverse" || quizMode === "cloze" ? option.word : option.meaning}</button>)}
                 </div>
-                {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizWord.meaning}`}{quizWord.definition && <p style={{ margin: "8px 0 0", color: "#c7c8d6", lineHeight: 1.9 }}>{quizWord.definition}</p>}{quizWord.example && <p dir="ltr" style={{ textAlign: "left", margin: "8px 0 0", color: "#b8b9ca", lineHeight: 1.8 }}>{quizWord.example}</p>}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= quizTotal ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
+                {quizChoice && <div className="notice">{quizChoice === quizWord.id ? "درست بود! عالی پیش می‌ری." : `پاسخ درست: ${quizMode === "reverse" || quizMode === "cloze" ? quizWord.word : quizWord.meaning}`}{quizWord.definition && <p style={{ margin: "8px 0 0", color: "#c7c8d6", lineHeight: 1.9 }}>{quizWord.definition}</p>}{quizWord.example && <p dir="ltr" style={{ textAlign: "left", margin: "8px 0 0", color: "#b8b9ca", lineHeight: 1.8 }}>{quizWord.example}</p>}<div style={{ marginTop: 12 }}><button className="btn btn-primary btn-small" onClick={nextQuestion}>{quizIndex + 1 >= quizTotal ? "دیدن نتیجه" : "سؤال بعدی"} <ArrowLeft size={14}/></button></div></div>}
               </>
             ) : <div className="empty">برای آزمون، ابتدا چند لغت ذخیره کن.</div>}
           </div>
