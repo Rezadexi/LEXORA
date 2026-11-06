@@ -68,6 +68,21 @@ export default function StudyWorkspacePage() {
     setMessage("واژه به فهرست موقت اضافه شد.");
   }
 
+  async function pasteClipboardText() {
+    if (!navigator.clipboard?.readText) {
+      setMessage("خواندن مستقیم کلیپ‌بورد در این مرورگر در دسترس نیست؛ متن را در کادر زیر به‌صورت دستی جای‌گذاری کن.");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) { setMessage("متن انگلیسی در کلیپ‌بورد پیدا نشد. ابتدا از PDF یا ابزار تشخیص متن عکس، متن را کپی کن."); return; }
+      setSourceText(current => current.trim() ? current + "\\n" + text.trim() : text.trim());
+      setMessage("متن کلیپ‌بورد به کادر اضافه شد؛ حالا می‌توانی نامزدهای واژگان را استخراج کنی.");
+    } catch {
+      setMessage("دسترسی به کلیپ‌بورد رد شد. متن را کپی کن و داخل کادر نگه‌دار و Paste را بزن.");
+    }
+  }
+
   function extractCandidates() {
     if (!sourceText.trim()) { setMessage("ابتدا متن قابل انتخاب PDF یا متن استخراج‌شده از OCR را در کادر متن قرار بده."); return; }
     let bankKeys = new Set<string>();
@@ -140,7 +155,7 @@ export default function StudyWorkspacePage() {
           <section className="panel" style={{padding:18,borderRadius:18,minWidth:0}}>
             <h2 style={{fontSize:19,fontWeight:750,margin:"0 0 12px"}}>۲. استخراج و بررسی کلمات</h2>
             <label className="form-field" style={{display:"block"}}><span>متن کپی‌شده از PDF یا خروجی OCR</span><textarea className="field" value={sourceText} onChange={e=>setSourceText(e.target.value)} rows={7} placeholder="متن انگلیسی را اینجا جای‌گذاری کن..." style={{width:"100%",marginTop:8,resize:"vertical"}}/></label>
-            <button className="btn" onClick={extractCandidates} style={{marginTop:10,display:"inline-flex",alignItems:"center",gap:8}}><FileImage size={16}/> استخراج نامزدها از متن</button>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}><button className="btn" onClick={pasteClipboardText} style={{display:"inline-flex",alignItems:"center",gap:8}}><FileText size={16}/> چسباندن متن کپی‌شده</button><button className="btn" onClick={extractCandidates} style={{display:"inline-flex",alignItems:"center",gap:8}}><FileImage size={16}/> استخراج نامزدها از متن</button></div>
             <div style={{display:"flex",gap:8,marginTop:18,alignItems:"center"}}><input className="field" value={manualWord} onChange={e=>setManualWord(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addManualWord();}}} placeholder="یا یک واژه را دستی وارد کن" style={{minWidth:0,flex:1}}/><button className="btn" onClick={addManualWord}><Plus size={16}/> افزودن</button></div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginTop:22,marginBottom:10,flexWrap:"wrap"}}><h3 style={{fontWeight:750,margin:0}}>۳. فهرست موقت ({uniqueCandidates.length})</h3><div style={{display:"flex",gap:8}}><button className="btn btn-small" onClick={()=>setSelected(uniqueCandidates)}>انتخاب همه</button><button className="btn btn-small" onClick={()=>setSelected([])}>لغو انتخاب</button></div></div>
             <div style={{display:"grid",gap:7,maxHeight:380,overflowY:"auto"}}>
