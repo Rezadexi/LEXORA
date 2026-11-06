@@ -104,9 +104,17 @@ function deduplicateWords(items: Word[]): Word[] {
       [b.definition, b.example, b.exampleFa, b.synonyms, b.antonyms].filter(Boolean).join("").length -
       [a.definition, a.example, a.exampleFa, a.synonyms, a.antonyms].filter(Boolean).join("").length
     )[0];
+    const hasUsefulMeaning = (meaning: string | undefined, word: string) => {
+      const value = (meaning || "").trim();
+      return !!value
+        && normalizeWordKey(value) !== normalizeWordKey(word)
+        && !/در دسترس نیست|ترجمه در دسترس نیست|معنی را بررسی کن|^(n\/a|unknown|undefined|null|—|-)$/.test(value.toLowerCase());
+    };
+    const existingMeaningIsUseful = hasUsefulMeaning(existing.meaning, existing.word);
+    const itemMeaningIsUseful = hasUsefulMeaning(item.meaning, item.word);
     byKey.set(key, {
       ...existing,
-      meaning: existing.meaning && !existing.meaning.includes("در دسترس نیست") ? existing.meaning : (item.meaning || existing.meaning),
+      meaning: existingMeaningIsUseful ? existing.meaning : (itemMeaningIsUseful ? item.meaning : (existing.meaning || item.meaning)),
       category: (!existing.category || existing.category === "Daily English" || existing.category === "Other")
         ? (item.category && item.category !== "Daily English" && item.category !== "Other" ? item.category : (existing.category || item.category || "Other"))
         : existing.category,
