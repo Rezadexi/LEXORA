@@ -827,6 +827,7 @@ export default function Home() {
         <div className="top-actions">
           <a className="btn btn-small coll-nav-link" href="/LEXORA/collocations/"><Sparkles size={15}/> کالوکیشن و اصطلاحات</a>
           <a className="btn btn-small wordskills-nav-link" href="/LEXORA/word-skills/"><BookOpen size={15}/> Word Skills</a>
+          <a className="btn btn-small" href="/LEXORA/study-workspace/"><BookOpen size={15}/> محیط مطالعه</a>
           <button className="btn btn-small" onClick={() => { setBulkText(""); setBulkMessage(""); setModal("bulk"); }}><Layers3 size={15}/> ورود گروهی</button>
           <button className="btn btn-small" onClick={exportWords}><ArrowDownLeft size={15}/> خروجی بانک</button>
           <button className="btn btn-small" onClick={exportFullBackup}><ArrowDownLeft size={15}/> پشتیبان کامل</button>
