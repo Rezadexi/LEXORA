@@ -25,10 +25,23 @@ const lessons: { id: number; title: string; topic: string; words: LessonWord[] }
     {word:"exercise book / notebook",meaning:"دفتر تمرین؛ دفتر یادداشت",example:"Write the answers in your exercise book.",exampleFa:"پاسخ‌ها را در دفتر تمرینت بنویس.",level:"A1"}
   ]},
   { id: 2, title: "درس 2", topic: "Grammar words — واژه‌های دستوری", words: [
-    {word:"noun",meaning:"اسم",example:"Teacher is a noun.",exampleFa:"Teacher اسم است.",level:"A2"},
-{word:"verb",meaning:"فعل",example:"Learn is a verb.",exampleFa:"Learn فعل است.",level:"A2"},
-{word:"adjective",meaning:"صفت",example:"Quiet is an adjective.",exampleFa:"Quiet صفت است.",level:"A2"},
-{word:"adverb",meaning:"قید",example:"Slowly is an adverb.",exampleFa:"Slowly قید است.",level:"A2"}
+    {word:"word",meaning:"کلمه؛ واژه",example:"This sentence has eight words.",exampleFa:"این جمله هشت کلمه دارد.",level:"A1"},
+    {word:"noun",meaning:"اسم",example:"Woman is a noun.",exampleFa:"Woman یک اسم است.",level:"A2"},
+    {word:"verb",meaning:"فعل",example:"Walk is a verb.",exampleFa:"Walk یک فعل است.",level:"A2"},
+    {word:"regular verb",meaning:"فعل باقاعده",example:"Walk is a regular verb.",exampleFa:"Walk یک فعل باقاعده است.",level:"A2"},
+    {word:"irregular verb",meaning:"فعل بی‌قاعده",example:"Speak is an irregular verb.",exampleFa:"Speak یک فعل بی‌قاعده است.",level:"A2"},
+    {word:"past simple",meaning:"گذشتهٔ ساده",example:"The past simple of walk is walked.",exampleFa:"گذشتهٔ سادهٔ walk برابر walked است.",level:"A2"},
+    {word:"past participle",meaning:"شکل سوم فعل؛ اسم مفعول",example:"Spoken is the past participle of speak.",exampleFa:"Spoken شکل سوم فعل speak است.",level:"B1"},
+    {word:"present perfect",meaning:"زمان حال کامل",example:"Have you spoken to the doctor today?",exampleFa:"آیا امروز با پزشک صحبت کرده‌ای؟",level:"B1"},
+    {word:"article",meaning:"حرف تعریف",example:"A is an article.",exampleFa:"A یک حرف تعریف است.",level:"A2"},
+    {word:"indefinite article",meaning:"حرف تعریف نامعین؛ a یا an",example:"An is an indefinite article.",exampleFa:"An یک حرف تعریف نامعین است.",level:"A2"},
+    {word:"definite article",meaning:"حرف تعریف معین؛ the",example:"The is the definite article in English.",exampleFa:"The حرف تعریف معین در انگلیسی است.",level:"A2"},
+    {word:"adjective",meaning:"صفت",example:"Old is an adjective.",exampleFa:"Old یک صفت است.",level:"A2"},
+    {word:"adverb",meaning:"قید",example:"Slowly is an adverb.",exampleFa:"Slowly یک قید است.",level:"A2"},
+    {word:"preposition",meaning:"حرف اضافه",example:"Up is a preposition in this sentence.",exampleFa:"Up در این جمله حرف اضافه است.",level:"B1"},
+    {word:"pronoun",meaning:"ضمیر",example:"She is a pronoun.",exampleFa:"She یک ضمیر است.",level:"A2"},
+    {word:"phrase",meaning:"عبارت؛ گروهی از کلمات",example:"On the way is a phrase.",exampleFa:"On the way یک عبارت است.",level:"A2"},
+    {word:"sentence",meaning:"جمله",example:"An old woman walked slowly up the hill.",exampleFa:"یک زن سالخورده به‌آرامی از تپه بالا رفت.",level:"A1"}
   ]},
   { id: 3, title: "درس 3", topic: "Using this book — روش استفاده از کتاب", words: [
     {word:"unit",meaning:"درس",example:"Read this unit first.",exampleFa:"اول این درس را بخوان.",level:"A1"},
