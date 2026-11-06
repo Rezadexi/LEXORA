@@ -1064,6 +1064,7 @@ export default function Home() {
                   <div className="quiz-options">
                     <button className="quiz-option" onClick={() => startQuiz("specialist")}>آزمون تخصصی <small>فقط واژه‌های جدید یا واژه‌هایی که قبلاً اشتباه زده‌ای</small></button>
                     <button className="quiz-option" disabled={wrongIds.length < 1} onClick={() => startQuiz("wrong")}>مرور واژه‌های غلط ({wrongIds.length}) <small>غلط‌های ثبت‌شده روی همین دستگاه</small></button>
+                    <button className="quiz-option" disabled={dueWords.length < 1} onClick={() => startQuiz("due")}>مرور موعددار ({dueWords.length}) <small>واژه‌هایی که زمان مرورشان رسیده است</small></button>
                   </div>
                 </div>
               </div>
