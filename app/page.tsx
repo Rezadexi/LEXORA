@@ -984,7 +984,7 @@ export default function Home() {
                 <div className="goal-number" style={{ textAlign: "center" }}>{quizScore} <span>/ {quizTotal}</span></div>
                 <p className="muted">درصد پاسخ درست: {quizTotal ? Math.round(quizScore / quizTotal * 100) : 0}%</p>
                 <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap", margin: "18px 0" }}>
-                  <span className="level">درست: {quizScore}</span><span className="level">غلط: {wrongIds.length}</span><span className="level">تسلط کامل: {mastered} واژه</span>
+                  <span className="level">درست: {quizScore}</span><span className="level">غلط در این آزمون: {quizTotal - quizScore}</span><span className="level">تسلط کامل: {mastered} واژه</span>
                 </div>
                 {wrongIds.length >= 1 && <button className="btn" style={{ margin: "0 6px 10px" }} onClick={() => startQuiz("wrong")}>آزمون جداگانه واژه‌های غلط ({wrongIds.length})</button>}
                 <button className="btn btn-primary" onClick={() => startQuiz()}><RotateCcw size={16}/> انتخاب آزمون دیگر</button>
@@ -995,7 +995,7 @@ export default function Home() {
                 <div className="quiz-question">
                   <span style={{ color: "#b8a5ff", fontFamily: "DM Sans, sans-serif", direction: "ltr", display: "inline-flex", alignItems: "center", gap: 8 }}>
                     <span>{quizMode === "reverse" ? quizWord.meaning : quizMode === "cloze" ? clozeExample(quizWord.example, quizWord.word) : quizWord.word}</span>
-                    {quizMode !== "reverse" && <button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button>}
+                    <button type="button" className="icon-btn" title="شنیدن تلفظ" aria-label={`شنیدن تلفظ ${quizWord.word}`} onClick={() => speak(quizWord.word)}><Volume2 size={17}/></button>
                   </span>
                   <br/>
                   <span style={{ fontSize: 13, color: "#a1a3b3", fontWeight: 400 }}>
