@@ -168,6 +168,8 @@ export default function Home() {
   const [enrichMessage, setEnrichMessage] = useState("");
   const [bulkText, setBulkText] = useState("");
   const [bulkMessage, setBulkMessage] = useState("");
+  const [ocrCandidates, setOcrCandidates] = useState<string[]>([]);
+  const [selectedOcrCandidates, setSelectedOcrCandidates] = useState<string[]>([]);
   const [checkedRelated, setCheckedRelated] = useState<string[]>([]);
   const [form, setForm] = useState({
     word: "", meaning: "", category: "Daily English", level: "نامشخص",
@@ -436,6 +438,38 @@ export default function Home() {
     setModal(null);
     setQuery("");
     setFilter("همه");
+  }
+
+  function extractOcrCandidates() {
+    const commonWords = new Set(("about above after again against all also am an and any are as at be because been before being below between both but by can could did do does doing down during each few for from further had has have having he her here hers herself him himself his how i if in into is it its itself just me more most my myself no nor not of off on once only or other our ours ourselves out over own same she should so some such than that the their theirs them themselves then there these they this those through to too under until up very was we were what when where which while who whom why will with would you your yours").split(/\\s+/));
+    const tokens = bulkText.match(/[A-Za-z][A-Za-z'-]{2,}/g) || [];
+    const seen = new Set<string>();
+    const candidates = tokens
+      .map(token => token.replace(/^[-']+|[-']+$/g, ""))
+      .filter(token => token.length >= 4 && !commonWords.has(token.toLowerCase()))
+      .filter(token => {
+        const key = normalizeWordKey(token);
+        if (!key || seen.has(key) || words.some(word => normalizeWordKey(word.word) === key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 120);
+    setOcrCandidates(candidates);
+    setSelectedOcrCandidates(candidates);
+    setBulkMessage(candidates.length
+      ? `از متن، ${candidates.length} نامزد واژه پیدا شد. قبل از افزودن، موارد نامربوط را از انتخاب خارج کن.`
+      : "واژهٔ تازه‌ای پیدا نشد. بهتر است متن OCR را بررسی کنی یا فهرست واژه‌ها را هرکدام در یک خط وارد کنی.");
+  }
+
+  function useSelectedOcrCandidates() {
+    if (!selectedOcrCandidates.length) {
+      setBulkMessage("حداقل یک واژه را انتخاب کن.");
+      return;
+    }
+    setBulkText(selectedOcrCandidates.join("\\n"));
+    setOcrCandidates([]);
+    setSelectedOcrCandidates([]);
+    setBulkMessage(`${selectedOcrCandidates.length} واژه برای بررسی نهایی آماده شد؛ حالا «افزودن واژه‌ها به بانک» را بزن.`);
   }
 
   function importBulkWords() {
@@ -956,8 +990,16 @@ export default function Home() {
             <div className="modal-head"><h2>افزودن گروهی واژه‌ها</h2><button className="icon-btn" onClick={() => setModal(null)}><X size={18}/></button></div>
             <p className="muted" style={{ lineHeight: 1.9 }}>فهرست واژه‌ها را از جزوه، PDF یا متن OCR کپی و اینجا جای‌گذاری کن؛ هر واژه در یک خط. می‌توانی فقط واژه انگلیسی را وارد کنی یا معنی فارسی را هم بعد از جداکننده بنویسی.</p>
             <div className="bulk-format-example" dir="ltr">resilient | تاب‌آور<br/>subtle | ظریف، نامحسوس<br/>starvation</div>
-            <div className="form-field"><label>فهرست واژه‌ها (هر خط یک واژه)</label><textarea className="field bulk-words-input" value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"resilient\nsubtle | ظریف، نامحسوس\nstarvation"} rows={12} /></div>
-            <p className="muted" style={{fontSize:12}}>واژه‌های تکراری با بانک فعلی و تکراری‌های همین فهرست خودکار رد می‌شوند. این روش واژه‌ها را سریع وارد می‌کند؛ اطلاعات تکمیلی را می‌توانی بعداً اضافه کنی.</p>
+            <div className="form-field"><label>فهرست واژه‌ها یا متن کپی‌شده از PDF/OCR</label><textarea className="field bulk-words-input" value={bulkText} onChange={e => { setBulkText(e.target.value); setOcrCandidates([]); setSelectedOcrCandidates([]); }} placeholder={"resilient | تاب‌آور\nsubtle | ظریف، نامحسوس\nیا یک پاراگراف کامل انگلیسی از OCR"} rows={12} /></div>
+            <div className="form-actions" style={{justifyContent:"flex-start", marginTop:8}}><button className="btn" onClick={extractOcrCandidates}><Sparkles size={15}/> استخراج نامزدها از متن OCR</button></div>
+            <p className="muted" style={{fontSize:12}}>برای فهرست آماده، هر واژه را در یک خط بنویس. برای متن کامل کتاب، استخراج فقط نامزد پیشنهاد می‌دهد و ممکن است بعضی واژه‌های عادی یا نامرتبط هم پیدا شوند؛ قبل از افزودن آن‌ها را بررسی کن. قالب‌بندی پررنگ کتاب در متن OCR معمولاً حفظ نمی‌شود.</p>
+            {ocrCandidates.length > 0 && <div style={{border:"1px solid var(--border)", borderRadius:12, padding:12, marginTop:12}}>
+              <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:10}}><strong>بررسی نامزدها ({selectedOcrCandidates.length} از {ocrCandidates.length})</strong><button className="btn btn-small" onClick={() => setSelectedOcrCandidates(selectedOcrCandidates.length === ocrCandidates.length ? [] : ocrCandidates)}>{selectedOcrCandidates.length === ocrCandidates.length ? "لغو انتخاب همه" : "انتخاب همه"}</button></div>
+              <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(115px,1fr))", gap:8, maxHeight:220, overflowY:"auto"}}>
+                {ocrCandidates.map(candidate => <label key={candidate} style={{display:"flex", alignItems:"center", gap:7, padding:"6px 8px", border:"1px solid var(--border)", borderRadius:8, fontSize:13}}><input type="checkbox" checked={selectedOcrCandidates.includes(candidate)} onChange={e => setSelectedOcrCandidates(current => e.target.checked ? [...current, candidate] : current.filter(item => item !== candidate))}/><span>{candidate}</span></label>)}
+              </div>
+              <div className="form-actions" style={{marginTop:12}}><button className="btn btn-primary" onClick={useSelectedOcrCandidates}>استفاده از واژه‌های انتخاب‌شده</button></div>
+            </div>}
             {bulkMessage && <div className="bulk-result" role="status">{bulkMessage}</div>}
             <div className="form-actions"><button className="btn btn-primary" onClick={importBulkWords}><Layers3 size={16}/> افزودن واژه‌ها به بانک</button><button className="btn" onClick={() => setModal(null)}>بستن</button></div>
           </div>
