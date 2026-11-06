@@ -331,7 +331,11 @@ export default function Home() {
     try {
       const cache = JSON.parse(localStorage.getItem(ENRICH_CACHE_KEY) || "{}") as Record<string, Partial<typeof form>>;
       const cached = cache[normalizeWordKey(term)];
-      if (cached?.definition && cached?.meaning) {
+      const relatedTranslationsComplete = (value?: string) =>
+        !value || value.split(/\s*\|\|\s*/).every(item => item.includes(" — ") && !item.endsWith(" — ترجمه در دسترس نیست"));
+      if (cached?.definition && cached?.meaning
+        && relatedTranslationsComplete(cached.synonyms)
+        && relatedTranslationsComplete(cached.antonyms)) {
         setForm(current => ({ ...current, ...cached, word: term }));
         setEnrichMessage("اطلاعات ذخیره‌شده فوراً بارگذاری شد.");
         return;
