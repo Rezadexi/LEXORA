@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Check, FileImage, FileText, Plus, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, FileImage, FileText, Plus, ScanText, Trash2, Upload, X } from "lucide-react";
 
 const BANK_KEY = "lexora.words.v1";
 const DRAFT_KEY = "lexora.study-workspace.draft.v1";
@@ -28,6 +28,8 @@ export default function StudyWorkspacePage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [savedCount, setSavedCount] = useState(0);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const isPdf = file?.type === "application/pdf" || file?.name.toLowerCase().endsWith(".pdf");
   const isImage = !!file && file.type.startsWith("image/");
@@ -80,6 +82,61 @@ export default function StudyWorkspacePage() {
       setMessage("متن کلیپ‌بورد به کادر اضافه شد؛ حالا می‌توانی نامزدهای واژگان را استخراج کنی.");
     } catch {
       setMessage("دسترسی به کلیپ‌بورد رد شد. متن را کپی کن و داخل کادر نگه‌دار و Paste را بزن.");
+    }
+  }
+
+  async function runImageOcr() {
+    if (!file || !isImage) {
+      setMessage("برای OCR مستقیم، ابتدا یک عکس از صفحهٔ کتاب انتخاب کن. برای PDF اسکن‌شده فعلاً از صفحه اسکرین‌شات بگیر و آن عکس را انتخاب کن.");
+      return;
+    }
+    setOcrBusy(true);
+    setOcrStatus("آماده‌سازی موتور OCR…");
+    setMessage("");
+    let worker: { recognize: (image: File) => Promise<{ data: { text: string } }>; terminate: () => Promise<void> } | null = null;
+    try {
+      const w = window as Window & { Tesseract?: { createWorker: (lang: string, oem?: number, options?: { logger?: (info: { status?: string; progress?: number }) => void }) => Promise<{ recognize: (image: File) => Promise<{ data: { text: string } }>; terminate: () => Promise<void> }> } };
+      if (!w.Tesseract) {
+        await new Promise<void>((resolve, reject) => {
+          const existing = document.querySelector<HTMLScriptElement>('script[data-lexora-tesseract="true"]');
+          if (existing) {
+            existing.addEventListener("load", () => resolve(), { once: true });
+            existing.addEventListener("error", () => reject(new Error("بارگذاری OCR ناموفق بود.")), { once: true });
+            if (w.Tesseract) resolve();
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+          script.async = true;
+          script.dataset.lexoraTesseract = "true";
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("کتابخانهٔ OCR بارگذاری نشد؛ اتصال اینترنت را بررسی کن."));
+          document.head.appendChild(script);
+        });
+      }
+      if (!w.Tesseract) throw new Error("موتور OCR در دسترس قرار نگرفت.");
+      worker = await w.Tesseract.createWorker("eng", 1, {
+        logger: info => {
+          const percent = typeof info.progress === "number" ? ` ${Math.round(info.progress * 100)}٪` : "";
+          setOcrStatus(`${info.status || "در حال پردازش"}${percent}`);
+        }
+      });
+      const result = await worker.recognize(file);
+      const recognized = result.data.text.trim();
+      if (!recognized) {
+        setMessage("متنی از این عکس تشخیص داده نشد. عکس واضح‌تر و با نور بهتر انتخاب کن.");
+        setOcrStatus("OCR تمام شد؛ متنی پیدا نشد.");
+        return;
+      }
+      setSourceText(current => current.trim() ? current + "\\n" + recognized : recognized);
+      setMessage("متن عکس با OCR استخراج شد. حالا «استخراج نامزدها از متن» را بزن و فهرست را بررسی کن.");
+      setOcrStatus("استخراج متن کامل شد.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "اجرای OCR ناموفق بود. متن را با Samsung Gallery یا Google Lens کپی کن.");
+      setOcrStatus("OCR ناموفق بود.");
+    } finally {
+      if (worker) await worker.terminate().catch(() => undefined);
+      setOcrBusy(false);
     }
   }
 
@@ -150,12 +207,13 @@ export default function StudyWorkspacePage() {
               {isImage && fileUrl && <div style={{maxHeight:"75vh",overflow:"auto",touchAction:"pan-x pan-y"}}><img src={fileUrl} alt="صفحهٔ کتاب انتخاب‌شده" style={{display:"block",width:"100%",height:"auto",objectFit:"contain",userSelect:"none"}}/></div>}
               {file && !isPdf && !isImage && <p className="muted" style={{padding:18}}>این نوع فایل پشتیبانی نمی‌شود. یک PDF یا عکس انتخاب کن.</p>}
             </div>
-            <p className="muted" style={{fontSize:12,lineHeight:1.8,marginTop:12}}>نکته: نمایش PDF و عکس فعال است. انتخاب محدوده با قلم، در این نسخه هنوز خودکار به متن تبدیل نمی‌شود؛ برای عکس/اسکن باید متن OCR را در کادر سمت راست قرار بدهی یا کلمات را دستی اضافه کنی.</p>
+            <p className="muted" style={{fontSize:12,lineHeight:1.8,marginTop:12}}>نکته: برای عکس، دکمهٔ «تشخیص متن از عکس» OCR انگلیسی را در مرورگر اجرا می‌کند؛ بار اول به اینترنت برای دریافت کتابخانه و مدل زبان نیاز دارد. عکس برای پردازش OCR به سرور LEXORA فرستاده نمی‌شود. PDF اسکن‌شده را فعلاً به‌صورت اسکرین‌شات ذخیره کن و همان عکس را انتخاب کن. انتخاب خودکار واژه‌های هایلایت‌شده هنوز پشتیبانی نمی‌شود.</p>
           </section>
           <section className="panel" style={{padding:18,borderRadius:18,minWidth:0}}>
             <h2 style={{fontSize:19,fontWeight:750,margin:"0 0 12px"}}>۲. استخراج و بررسی کلمات</h2>
             <label className="form-field" style={{display:"block"}}><span>متن کپی‌شده از PDF یا خروجی OCR</span><textarea className="field" value={sourceText} onChange={e=>setSourceText(e.target.value)} rows={7} placeholder="متن انگلیسی را اینجا جای‌گذاری کن..." style={{width:"100%",marginTop:8,resize:"vertical"}}/></label>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}><button className="btn" onClick={pasteClipboardText} style={{display:"inline-flex",alignItems:"center",gap:8}}><FileText size={16}/> چسباندن متن کپی‌شده</button><button className="btn" onClick={extractCandidates} style={{display:"inline-flex",alignItems:"center",gap:8}}><FileImage size={16}/> استخراج نامزدها از متن</button></div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}><button className="btn" onClick={pasteClipboardText} style={{display:"inline-flex",alignItems:"center",gap:8}}><FileText size={16}/> چسباندن متن کپی‌شده</button><button className="btn" onClick={extractCandidates} style={{display:"inline-flex",alignItems:"center",gap:8}}><FileImage size={16}/> استخراج نامزدها از متن</button>{isImage && <button className="btn" onClick={runImageOcr} disabled={ocrBusy} style={{display:"inline-flex",alignItems:"center",gap:8,opacity:ocrBusy?.65:1}}><ScanText size={16}/>{ocrBusy ? "در حال OCR…" : "تشخیص متن از عکس"}</button>}</div>
+            {ocrStatus && <p className="muted" role="status" style={{fontSize:12,marginTop:8}}>{ocrStatus}</p>}
             <div style={{display:"flex",gap:8,marginTop:18,alignItems:"center"}}><input className="field" value={manualWord} onChange={e=>setManualWord(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addManualWord();}}} placeholder="یا یک واژه را دستی وارد کن" style={{minWidth:0,flex:1}}/><button className="btn" onClick={addManualWord}><Plus size={16}/> افزودن</button></div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginTop:22,marginBottom:10,flexWrap:"wrap"}}><h3 style={{fontWeight:750,margin:0}}>۳. فهرست موقت ({uniqueCandidates.length})</h3><div style={{display:"flex",gap:8}}><button className="btn btn-small" onClick={()=>setSelected(uniqueCandidates)}>انتخاب همه</button><button className="btn btn-small" onClick={()=>setSelected([])}>لغو انتخاب</button></div></div>
             <div style={{display:"grid",gap:7,maxHeight:380,overflowY:"auto"}}>
