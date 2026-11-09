@@ -248,15 +248,18 @@ export default function PodcastPage() {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed.segments) || parsed.segments.length < 8) throw new Error("سناریوی دریافتی ناقص بود؛ دوباره تلاش کن.");
       const validSections = ["intro","vocabulary","story","conversation","outro"];
-      const nextSegments: Segment[] = parsed.segments
-        .filter((item: any) => validSections.includes(item.section) && typeof item.text === "string" && item.text.trim().length > 25)
-        .map((item: any, index: number) => ({
+      const nextSegments: Segment[] = (parsed.segments as unknown[]).flatMap((candidate, index): Segment[] => {
+        if (typeof candidate !== "object" || candidate === null) return [];
+        const item = candidate as {section?: unknown; text?: unknown; label?: unknown; speaker?: unknown};
+        if (typeof item.section !== "string" || !validSections.includes(item.section) || typeof item.text !== "string" || item.text.trim().length <= 25) return [];
+        return [{
           id: "ai-" + Date.now() + "-" + index,
-          section: item.section,
+          section: item.section as Segment["section"],
           label: String(item.label || "Part " + (index + 1)).slice(0,90),
           speaker: String(item.speaker || "Host").slice(0,40),
           text: item.text.trim()
-        }));
+        }];
+      });
       if (nextSegments.length < 8) throw new Error("بخش‌های قابل استفاده سناریو کافی نبودند.");
       const storyText = nextSegments.filter(item => item.section === "story").map(item => item.text.toLowerCase()).join(" ");
       const teachingText = nextSegments.filter(item => item.section === "vocabulary").map(item => item.text.toLowerCase()).join(" ");
