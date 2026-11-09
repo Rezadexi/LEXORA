@@ -7,6 +7,7 @@
 - Add, edit, search, filter, and group words by category
 - English definitions, Persian meanings, examples, translations, synonyms, and antonyms
 - Browser-based pronunciation where supported
+- Podcast Studio connected to the local vocabulary bank: bilingual transcript, American-English browser speech, playback speed/segment controls, story and dialogue practice, listening quiz, and local episode archive
 - Bulk vocabulary import from alternating English/Persian lines or `word | معنی` records
 - Text candidate extraction and a separate study workspace for pasted text, images, and PDFs
 - Image OCR in the browser (requires internet for the OCR library/model to load)
