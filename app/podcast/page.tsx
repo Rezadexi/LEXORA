@@ -143,6 +143,7 @@ export default function PodcastPage() {
   const [activeTab, setActiveTab] = useState<"studio" | "player" | "quiz" | "library">("studio");
   const [notice, setNotice] = useState("");
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const playbackTokenRef = useRef(0);
   const currentIndexRef = useRef(0);
   const segmentsRef = useRef<Segment[]>([]);
 
@@ -198,12 +199,13 @@ export default function PodcastPage() {
   }
 
   function stopAudio() {
+    playbackTokenRef.current += 1;
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     utteranceRef.current = null;
     setIsPlaying(false);
   }
 
-  function speakSegment(index: number) {
+  function speakSegment(index: number, token = playbackTokenRef.current) {
     const segment = segmentsRef.current[index];
     if (!segment || !("speechSynthesis" in window)) {
       setNotice("پخش گفتار در این مرورگر پشتیبانی نمی‌شود.");
@@ -216,11 +218,12 @@ export default function PodcastPage() {
     utterance.rate = rate;
     utterance.pitch = 1;
     utterance.onend = () => {
+      if (token !== playbackTokenRef.current) return;
       const next = index + 1;
       if (next < segmentsRef.current.length) {
         currentIndexRef.current = next;
         setCurrentIndex(next);
-        window.setTimeout(() => speakSegment(next), 180);
+        window.setTimeout(() => speakSegment(next, token), 180);
       } else {
         setIsPlaying(false);
         setNotice("قسمت به پایان رسید. حالا آزمون شنیداری را امتحان کن.");
