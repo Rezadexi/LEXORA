@@ -259,8 +259,13 @@ export default function PodcastPage() {
         }));
       if (nextSegments.length < 8) throw new Error("بخش‌های قابل استفاده سناریو کافی نبودند.");
       const storyText = nextSegments.filter(item => item.section === "story").map(item => item.text.toLowerCase()).join(" ");
-      const missing = selectedWords.filter(word => !storyText.includes(word.word.toLowerCase()));
-      if (missing.length) throw new Error("این واژه‌ها در داستان استفاده نشدند: " + missing.map(word => word.word).join(", ") + ". دوباره تولید کن.");
+      const teachingText = nextSegments.filter(item => item.section === "vocabulary").map(item => item.text.toLowerCase()).join(" ");
+      const missingInStory = selectedWords.filter(word => !storyText.includes(word.word.toLowerCase()));
+      const missingInTeaching = selectedWords.filter(word => !teachingText.includes(word.word.toLowerCase()));
+      if (missingInStory.length || missingInTeaching.length) {
+        const missing = [...new Set([...missingInStory, ...missingInTeaching].map(word => word.word))];
+        throw new Error("این واژه‌ها در آموزش یا داستان به‌درستی پوشش داده نشدند: " + missing.join(", ") + ". دوباره تولید کن.");
+      }
       setSegments(nextSegments);
       setCurrentIndex(0);
       setQuizAnswers({});
