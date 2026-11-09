@@ -157,6 +157,8 @@ export default function Home() {
   const [academyMeaningChecked, setAcademyMeaningChecked] = useState(false);
   const [academyClozeGuess, setAcademyClozeGuess] = useState("");
   const [academyClozeChecked, setAcademyClozeChecked] = useState(false);
+  const [academySentenceDraft, setAcademySentenceDraft] = useState("");
+  const [academySentenceChecked, setAcademySentenceChecked] = useState(false);
   const [academyDone, setAcademyDone] = useState(false);
   const [academyCorrect, setAcademyCorrect] = useState(0);
   const [academyReviewed, setAcademyReviewed] = useState(0);
@@ -475,6 +477,8 @@ export default function Home() {
   function extractOcrCandidates() {
     const commonWords = new Set(("about above after again against all also am an and any are as at be because been before being below between both but by can could did do does doing down during each few for from further had has have having he her here hers herself him himself his how i if in into is it its itself just me more most my myself no nor not of off on once only or other our ours ourselves out over own same she should so some such than that the their theirs them themselves then there these they this those through to too under until up very was we were what when where which while who whom why will with would you your yours").split(/\s+/));
     const tokens = bulkText.match(/[A-Za-z][A-Za-z'-]{2,}/g) || [];
+    let enrichmentCache: Record<string, Partial<typeof form>> = {};
+    try { enrichmentCache = JSON.parse(localStorage.getItem(ENRICH_CACHE_KEY) || "{}") as Record<string, Partial<typeof form>>; } catch { enrichmentCache = {}; }
     const seen = new Set<string>();
     const candidates = tokens
       .map(token => token.replace(/^[-']+|[-']+$/g, ""))
@@ -554,7 +558,7 @@ export default function Home() {
       if (!meaning) withoutMeaning++;
       additions.push({
         id: crypto.randomUUID(), word: term, meaning: meaning || "معنی وارد نشده؛ تکمیل خودکار را اجرا کن",
-        category: "Academic", level: "نامشخص", definition: "", example: "", exampleFa: "",
+        category: "Academic", level: (enrichmentCache[key]?.level && enrichmentCache[key]?.level !== "نامشخص") ? enrichmentCache[key]!.level! : estimateLevel(term), definition: enrichmentCache[key]?.definition || "", example: enrichmentCache[key]?.example || "", exampleFa: enrichmentCache[key]?.exampleFa || "",
         synonyms: "", antonyms: "", createdAt: Date.now(), correct: 0, reviews: 0
       });
     }
@@ -616,6 +620,7 @@ export default function Home() {
     }
     setAcademyQueue(queue); setAcademyIndex(0); setAcademyRevealed(false);
     setAcademyMeaningGuess(""); setAcademyMeaningChecked(false); setAcademyClozeGuess(""); setAcademyClozeChecked(false);
+    setAcademySentenceDraft(""); setAcademySentenceChecked(false);
     setAcademyDone(false); setAcademyCorrect(0); setAcademyReviewed(0); setModal("academy");
   }
 
@@ -650,7 +655,7 @@ export default function Home() {
     setAcademyReviewed(n => n + 1);
     if (rating !== "again") setAcademyCorrect(n => n + 1);
     if (academyIndex + 1 >= academyQueue.length) setAcademyDone(true);
-    else { setAcademyIndex(n => n + 1); setAcademyRevealed(false); setAcademyMeaningGuess(""); setAcademyMeaningChecked(false); setAcademyClozeGuess(""); setAcademyClozeChecked(false); }
+    else { setAcademyIndex(n => n + 1); setAcademyRevealed(false); setAcademyMeaningGuess(""); setAcademyMeaningChecked(false); setAcademyClozeGuess(""); setAcademyClozeChecked(false); setAcademySentenceDraft(""); setAcademySentenceChecked(false); }
   }
 
   function startQuiz(mode?: "smart" | "general" | "specialist" | "wrong" | "due" | "reverse" | "cloze") {
@@ -1039,7 +1044,22 @@ export default function Home() {
                       ) : (
                         <p className="academy-prompt">برای این کلمه مثال قابل تمرین در بانک نیست؛ معنی و تعریف را مرور کن و سپس میزان تسلطت را انتخاب کن.</p>
                       )}
-                      <div className="academy-step-label"><span>مرحله ۳ از ۳</span><span>برنامه‌ریزی مرور</span></div>
+                      <div className="academy-step-label"><span>مرحله ۳ از ۴</span><span>تولید فعال جمله</span></div>
+                      <p className="academy-prompt">حالا بدون کپی‌کردن مثال، با این واژه یک جملهٔ تازه و واقعی از خودت بساز. این مرحله کمک می‌کند واژه را وارد زبان فعال خودت کنی.</p>
+                      {!academySentenceChecked ? (
+                        <div className="academy-input-stage">
+                          <label htmlFor="academy-sentence-draft">جملهٔ خودت به انگلیسی</label>
+                          <textarea id="academy-sentence-draft" className="field" dir="ltr" rows={3} value={academySentenceDraft} onChange={e => setAcademySentenceDraft(e.target.value)} placeholder="Write your own sentence with this word…" />
+                          <button className="btn btn-primary" disabled={!academySentenceDraft.trim()} onClick={() => setAcademySentenceChecked(true)}>ثبت جملهٔ من <Check size={15}/></button>
+                        </div>
+                      ) : (
+                        <div className="academy-answer">
+                          <div className="academy-feedback-note">جمله‌ات ثبت شد. بررسی کن که واژه را با معنی درست و در ساختار طبیعی به کار برده‌ای؛ اگر مطمئن نیستی، آن را در جلسهٔ بعد بازنویسی کن.</div>
+                          <p dir="ltr" style={{textAlign:"left",padding:12,border:"1px solid var(--border)",borderRadius:10}}>{academySentenceDraft}</p>
+                          {academyQueue[academyIndex].example && <div className="academy-example"><strong>نمونهٔ مرجع</strong><p dir="ltr">{academyQueue[academyIndex].example}</p></div>}
+                        </div>
+                      )}
+                      <div className="academy-step-label"><span>مرحله ۴ از ۴</span><span>برنامه‌ریزی مرور</span></div>
                       <div className="academy-recall-tip">صادقانه انتخاب کن: پاسخ را واقعاً از حافظه می‌دانستی یا فقط بعد از دیدن آن شناختی؟</div>
                       <div className="academy-rating-label">چقدر مستقل توانستی به یاد بیاوری؟</div>
                       <div className="academy-ratings">
