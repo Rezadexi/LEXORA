@@ -37,84 +37,8 @@ type SavedEpisode = Episode;
 
 const WORDS_KEY = "lexora.words.v1";
 const EPISODES_KEY = "lexora.podcast.episodes.v1";
+const GEMINI_KEY = "lexora.podcast.gemini-key.v1";
 
-function makeSegments(words: Word[], title: string): Segment[] {
-  const segments: Segment[] = [{
-    id: "intro",
-    section: "intro",
-    label: "Welcome",
-    speaker: "Host",
-    text: `Welcome to LEXORA Podcast. I'm your host. Today's episode is called ${title}. We'll learn ${words.length} useful English words, hear them in context, and finish with a listening and vocabulary challenge. Take a breath, listen carefully, and let's begin.`
-  }];
-
-  words.forEach((word, index) => {
-    const definition = word.definition?.trim() || `The Persian meaning is ${word.meaning || "not added yet"}.`;
-    const example = word.example?.trim();
-    segments.push({
-      id: `vocab-${word.id}`,
-      section: "vocabulary",
-      label: `${index + 1}. ${word.word}`,
-      speaker: "Host",
-      wordId: word.id,
-      text: `Word number ${index + 1}: ${word.word}. ${definition} ${example ? `Listen to this example: ${example}` : `Try to make your own sentence with the word ${word.word}.`}`
-    });
-  });
-
-  segments.push({
-    id: "story-start",
-    section: "story",
-    label: "A day in context · Part 1",
-    speaker: "Narrator",
-    text: "Now, let's follow Maya through a busy week. She has decided to improve her English. Every day, she listens carefully, writes down useful expressions, and tries to notice how people use them in real situations. As you listen, pay attention to today's vocabulary."
-  });
-
-  words.forEach((word, index) => {
-    const example = word.example?.trim();
-    segments.push({
-      id: `story-${word.id}`,
-      section: "story",
-      label: `Story · ${word.word}`,
-      speaker: "Narrator",
-      wordId: word.id,
-      text: example
-        ? `On day ${index + 1}, Maya heard this sentence: ${example} She wrote down the word ${word.word} and connected it with its meaning.`
-        : `On day ${index + 1}, Maya reviewed the word ${word.word}. She said it aloud, checked its meaning, and created a new sentence of her own.`
-    });
-  });
-
-  segments.push({
-    id: "story-end",
-    section: "story",
-    label: "A day in context · Part 2",
-    speaker: "Narrator",
-    text: "By the end of the week, Maya had done more than memorize a list. She had heard the words, understood their meanings, and practiced using them. That's how vocabulary becomes part of your active English."
-  });
-
-  words.forEach((word, index) => {
-    if (index % 2 !== 0 && words.length > 1) return;
-    const partner = words[index + 1];
-    segments.push({
-      id: `dialogue-${word.id}`,
-      section: "conversation",
-      label: `Conversation · ${word.word}`,
-      speaker: "Host & Learner",
-      wordId: word.id,
-      text: partner
-        ? `Host: Let's review two words. What does ${word.word} mean? Learner: ${word.definition || word.meaning}. Host: Good. And what about ${partner.word}? Learner: ${partner.definition || partner.meaning}. Host: Excellent. Now listen to the examples again and notice the pronunciation.`
-        : `Host: One final question. What does ${word.word} mean? Learner: ${word.definition || word.meaning}. Host: Exactly. Say the word one more time and make your own sentence.`
-    });
-  });
-
-  segments.push({
-    id: "outro",
-    section: "outro",
-    label: "Wrap-up",
-    speaker: "Host",
-    text: "That's the end of this LEXORA episode. Before you go, try the short quiz on the screen. Then come back tomorrow and listen again. Repetition, attention, and active use make vocabulary stick. Thanks for listening."
-  });
-
-  return segments;
-}
 
 function sectionName(section: Segment["section"]) {
   return ({
@@ -142,6 +66,9 @@ export default function PodcastPage() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [activeTab, setActiveTab] = useState<"studio" | "player" | "quiz" | "library">("studio");
   const [notice, setNotice] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiKeyDraft, setApiKeyDraft] = useState("");
+  const [generating, setGenerating] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const playbackTokenRef = useRef(0);
   const currentIndexRef = useRef(0);
@@ -157,6 +84,9 @@ export default function PodcastPage() {
       setSelectedIds(valid.slice(0, 8).map(item => item.id));
       const saved = JSON.parse(localStorage.getItem(EPISODES_KEY) || "[]");
       setSavedEpisodes(Array.isArray(saved) ? saved : []);
+      const storedKey = localStorage.getItem(GEMINI_KEY) || "";
+      setApiKey(storedKey);
+      setApiKeyDraft(storedKey);
     } catch {
       setWords([]);
       setSelectedIds([]);
@@ -258,20 +188,91 @@ export default function PodcastPage() {
     setCurrentIndex(bounded);
   }
 
-  function generateEpisode() {
-    if (selectedWords.length < 3) {
+  function saveApiKey() {
+    const value = apiKeyDraft.trim();
+    if (!value) {
+      localStorage.removeItem(GEMINI_KEY);
+      setApiKey("");
+      setApiKeyDraft("");
+      setNotice("کلید API از این مرورگر پاک شد.");
+      return;
+    }
+    localStorage.setItem(GEMINI_KEY, value);
+    setApiKey(value);
+    setNotice("کلید فقط روی همین مرورگر ذخیره شد.");
+  }
+
+  async function generateEpisode() {
+    if ( selectedWords.length < 3) {
       setNotice("برای ساخت قسمت، حداقل ۳ واژه انتخاب کن.");
       return;
     }
+    if (!apiKey.trim()) {
+      setNotice("ابتدا کلید Gemini API را وارد و ذخیره کن.");
+      return;
+    }
+    setGenerating(true);
     stopAudio();
-    const nextSegments = makeSegments(selectedWords, title.trim() || "Your Vocabulary Story");
-    setSegments(nextSegments);
-    setCurrentIndex(0);
-    setQuizAnswers({});
-    setQuizIndex(0);
-    setShowQuiz(false);
-    setActiveTab("player");
-    setNotice("قسمت ساخته شد. برای شنیدن، دکمه پخش را بزن.");
+    setNotice("در حال نوشتن سناریوی اختصاصی…");
+    const context = selectedWords.map(({word, meaning, definition, example, level, category}) => ({
+      word, meaning, definition: definition || "", example: example || "",
+      level: level || "B1", category: category || ""
+    }));
+    const prompt = [
+      "You are an expert American-English podcast writer and B1-B2 English teacher.",
+      "Write a genuinely original podcast episode titled: " + (title.trim() || "Your Vocabulary Story"),
+      "Blend precise vocabulary teaching, a vivid continuous short story, and a realistic two-person conversation.",
+      "Target words and learner data: " + JSON.stringify(context),
+      "For EACH word create a teaching segment explaining nuance, common collocation, a likely confusion or misuse, and a NEW natural American example. Do not simply repeat the stored example.",
+      "Write a continuous story with a specific setting, named characters, a real problem, turning point and resolution. Every target word must occur naturally in the story. Never use a story about someone studying English or writing down vocabulary.",
+      "Add a realistic dialogue with distinct speakers and natural turn-taking; use the target words naturally.",
+      "Open with an episode-specific hook, not generic welcome filler. End with a short recap and three listening comprehension questions, without answers.",
+      "No word-number list, no repetitive sentence starters, no filler, no repeated template sentences. Every segment must add information.",
+      "Create 12-20 segments, 2-5 sentences each, roughly 650-950 words total. Spoken English only, no stage directions, no Persian.",
+      "Return ONLY valid JSON: {segments:[{section:intro|vocabulary|story|conversation|outro,label:string,speaker:string,text:string}]}",
+      "Every target word must appear in at least one vocabulary segment and at least one story segment."
+    ].join("\n\n");
+    try {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(apiKey.trim()), {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          contents: [{role:"user",parts:[{text:prompt}]}],
+          generationConfig: {temperature:0.9,responseMimeType:"application/json"}
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error?.message || "Gemini API request failed.");
+      const raw = payload?.candidates?.[0]?.content?.parts?.map((part: {text?:string}) => part.text || "").join("").trim();
+      if (!raw) throw new Error("پاسخ متنی از سرویس دریافت نشد.");
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed.segments) || parsed.segments.length < 8) throw new Error("سناریوی دریافتی ناقص بود؛ دوباره تلاش کن.");
+      const validSections = ["intro","vocabulary","story","conversation","outro"];
+      const nextSegments: Segment[] = parsed.segments
+        .filter((item: any) => validSections.includes(item.section) && typeof item.text === "string" && item.text.trim().length > 25)
+        .map((item: any, index: number) => ({
+          id: "ai-" + Date.now() + "-" + index,
+          section: item.section,
+          label: String(item.label || "Part " + (index + 1)).slice(0,90),
+          speaker: String(item.speaker || "Host").slice(0,40),
+          text: item.text.trim()
+        }));
+      if (nextSegments.length < 8) throw new Error("بخش‌های قابل استفاده سناریو کافی نبودند.");
+      const storyText = nextSegments.filter(item => item.section === "story").map(item => item.text.toLowerCase()).join(" ");
+      const missing = selectedWords.filter(word => !storyText.includes(word.word.toLowerCase()));
+      if (missing.length) throw new Error("این واژه‌ها در داستان استفاده نشدند: " + missing.map(word => word.word).join(", ") + ". دوباره تولید کن.");
+      setSegments(nextSegments);
+      setCurrentIndex(0);
+      setQuizAnswers({});
+      setQuizIndex(0);
+      setShowQuiz(false);
+      setActiveTab("player");
+      setNotice("سناریوی اختصاصی ساخته شد؛ داستان و مکالمه برای همین واژه‌ها نوشته شده‌اند.");
+    } catch (error) {
+      setNotice("ساخت پادکست ناموفق بود: " + (error instanceof Error ? error.message : "خطای ناشناخته"));
+    } finally {
+      setGenerating(false);
+    }
   }
 
   function saveEpisode() {
@@ -385,9 +386,15 @@ export default function PodcastPage() {
             <div className="podcast-setting-row"><span>سطح</span><strong>B1 · Intermediate</strong></div>
             <div className="podcast-setting-row"><span>ساختار</span><strong>آموزش + داستان + مکالمه</strong></div>
             <div className="podcast-setting-row"><span>گوینده</span><strong>صدای انگلیسی مرورگر</strong></div>
-            <div className="podcast-note"><AudioLines size={17}/><span>پخش از صدای انگلیسی دستگاه استفاده می‌کند. صدای در دسترس به مرورگر و تنظیمات گوشی بستگی دارد.</span></div>
-            <button className="podcast-generate" onClick={generateEpisode}><Sparkles size={17}/> ساخت قسمت با {selectedIds.length} واژه <ChevronRight size={17}/></button>
-            <p className="podcast-disclaimer">متن با قالب آموزشی LEXORA ساخته می‌شود؛ برای تولید متن تازه با هوش مصنوعی به سرویس و اتصال جداگانه نیاز است.</p>
+            <div className="podcast-ai-key">
+              <label className="podcast-field-label" htmlFor="podcast-gemini-key">کلید Gemini API برای سناریوی هوشمند</label>
+              <input id="podcast-gemini-key" className="podcast-title-input" type="password" autoComplete="off" value={apiKeyDraft} onChange={event => setApiKeyDraft(event.target.value)} placeholder="Paste your Gemini API key"/>
+              <button className="podcast-text-button" type="button" onClick={saveApiKey}>ذخیره کلید</button>
+              <small>کلید فقط در همین مرورگر ذخیره می‌شود. واژه‌ها و معنی‌های انتخابی برای ساخت سناریو به سرویس Gemini گوگل ارسال می‌شوند. برای پاک‌کردن کلید، کادر را خالی و ذخیره کن.</small>
+            </div>
+            <div className="podcast-note"><AudioLines size={17}/><span>متن اپیزود با هوش مصنوعی و بر اساس اطلاعات واژه‌های خودت ساخته می‌شود؛ پخش صدا با موتور گفتار مرورگر و لهجه en-US است.</span></div>
+            <button className="podcast-generate" onClick={generateEpisode} disabled={generating || !apiKey.trim()}><Sparkles size={17}/> {generating ? "در حال ساخت سناریوی اختصاصی…" : "ساخت پادکست هوشمند با " + selectedIds.length + " واژه"} <ChevronRight size={17}/></button>
+            <p className="podcast-disclaimer">برای تولید محتوای تازه به اینترنت و کلید Gemini API نیاز است. کلید روی دستگاه خودت می‌ماند و نباید آن را با کسی به اشتراک بگذاری.</p>
           </aside>
         </section>
       )}
