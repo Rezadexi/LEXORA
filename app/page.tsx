@@ -477,8 +477,6 @@ export default function Home() {
   function extractOcrCandidates() {
     const commonWords = new Set(("about above after again against all also am an and any are as at be because been before being below between both but by can could did do does doing down during each few for from further had has have having he her here hers herself him himself his how i if in into is it its itself just me more most my myself no nor not of off on once only or other our ours ourselves out over own same she should so some such than that the their theirs them themselves then there these they this those through to too under until up very was we were what when where which while who whom why will with would you your yours").split(/\s+/));
     const tokens = bulkText.match(/[A-Za-z][A-Za-z'-]{2,}/g) || [];
-    let enrichmentCache: Record<string, Partial<typeof form>> = {};
-    try { enrichmentCache = JSON.parse(localStorage.getItem(ENRICH_CACHE_KEY) || "{}") as Record<string, Partial<typeof form>>; } catch { enrichmentCache = {}; }
     const seen = new Set<string>();
     const candidates = tokens
       .map(token => token.replace(/^[-']+|[-']+$/g, ""))
@@ -544,6 +542,8 @@ export default function Home() {
       setBulkMessage("واژه‌ای قابل‌شناسایی پیدا نشد. هر واژه را در یک خط و معنی را در خط بعدی، یا به‌شکل word | معنی وارد کن.");
       return;
     }
+    let enrichmentCache: Record<string, Partial<typeof form>> = {};
+    try { enrichmentCache = JSON.parse(localStorage.getItem(ENRICH_CACHE_KEY) || "{}") as Record<string, Partial<typeof form>>; } catch { enrichmentCache = {}; }
     const existing = new Set(words.map(w => normalizeWordKey(w.word)));
     const seen = new Set<string>();
     const additions: Word[] = [];
